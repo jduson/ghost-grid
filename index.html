@@ -278,7 +278,9 @@ function setPx(el,s){if(!el)return;s=String(s);if(el.dataset&&el.dataset.t===s)r
    «Бегущего по лезвию»; голограммы над улицами из «Призрака в доспехах».
    Город живёт по «накалу» heat 0..1, который плавно догоняет счёт игры.
    ===================================================================== */
-const bg=$('bg'),b=bg.getContext('2d');
+const bg=$('bg'),B0=bg.getContext('2d');let b=B0;
+/* качество: 2 — полное, 1 и 0 — облегчённое для слабых телефонов (включается само) */
+let Q=2,BG_IV=1000/30,bgAcc=1e9,fpsEma=16.7,slowT=0;
 function srnd(seed){let h=seed>>>0;return()=>(h=(h*1664525+1013904223)>>>0)/4294967296}
 function layer(w,h){const c=document.createElement('canvas');c.width=Math.max(1,w);c.height=Math.max(1,h);const g=c.getContext('2d');if(g)g.imageSmoothingEnabled=false;return c}
 const B4=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
@@ -510,11 +512,11 @@ function sizeBg(){
   C.P=Math.max(2,Math.round(vh/280));C.w=Math.ceil(vw/C.P);C.h=Math.ceil(vh/C.P);
   bg.width=C.w;bg.height=C.h;bg.style.width=C.w*C.P+'px';bg.style.height=C.h*C.P+'px';
   b.imageSmoothingEnabled=false;
-  C.hor=Math.round(C.h*.71);C.road0=C.hor+6;C.laneA=C.hor+17;C.laneB=C.hor+32;C.near0=C.hor+35;
+  C.hor=Math.round(C.h*.71);C.U=layer(C.w,C.hor+6);C.UG=C.U.getContext('2d');C.road0=C.hor+6;C.laneA=C.hor+17;C.laneB=C.hor+32;C.near0=C.hor+35;
   C.beacons=[];C.fires=[];C.smoke=[];C.sparks=[];
   const r=srnd(7331);
   bakeSky();bakeFar(r);bakeCity(r);setupSigns();bakeLamps(r);bakeBlimp();
-  C.koiC=layer(C.w,C.h);
+  C.koiC=layer(C.w,C.h);if(C.koi)C.koi.bb=null;if(typeof resetCaches==='function')resetCaches();
   C.cars=[];for(let i=0;i<Math.max(3,Math.round(C.w/45));i++)C.cars.push(newCar(Math.random()*C.w,i%2?1:-1));
   C.rain=Array.from({length:Math.round(C.w*C.h/150)},()=>({x:Math.random()*C.w,y:Math.random()*C.h,v:160+Math.random()*120,z:Math.random()}));
   C.air=[];for(const [yy,v] of [[.14,22],[.22,-16],[.3,12]])for(let i=0;i<Math.round(C.w/40);i++)C.air.push({x:Math.random()*C.w,y:Math.round(C.h*yy),v:v*(.8+Math.random()*.4)});
@@ -563,7 +565,15 @@ function drawCar(c){
   b.globalAlpha=.25;b.fillStyle='#ff3b30';b.fillRect(back-fx*2,y,3,2);b.globalAlpha=1;
 }
 
-const PUFF={};
+const PUFF={},BEAM={},FGLOW={};
+function resetCaches(){for(const k in BEAM)delete BEAM[k]}
+/* луч прожектора: заготовки по длине и наклону, чтобы не считать каждый пиксель в каждом кадре */
+function beam(L0,ai){const L=C.hor+8,k=L+'|'+ai;if(BEAM[k])return BEAM[k];const t=Math.tan(ai/16),ox=Math.ceil(Math.max(0,-t*L))+16,wd=Math.ceil(Math.abs(t)*L)+34,c=layer(wd,L),g=c.getContext('2d');
+  if(g&&g.fillRect){g.fillStyle='#4a5c62';for(let yy=0;yy<L;yy++){const k2=yy/L,cx=ox+t*yy,hw=1+k2*14;for(let xx=Math.round(cx-hw);xx<=cx+hw;xx++)if(dith(xx,yy,.16+.14*(1-k2)))g.fillRect(xx,yy,1,1)}}
+  return BEAM[k]={c,ox}}
+function fireGlow(R,I){const k=R+'|'+I;if(FGLOW[k])return FGLOW[k];const n=R*2+1,c=layer(n,n),g=c.getContext('2d');
+  if(g&&g.fillRect)for(let yy=-R;yy<=R;yy++)for(let xx=-R;xx<=R;xx++){const d=Math.hypot(xx,yy*1.2)/R;if(d<1&&dith(xx+R,yy+R,(1-d)*.55*I/4)){g.fillStyle=d<.45?'#7a3a14':'#4a1e10';g.fillRect(xx+R,yy+R,1,1)}}
+  return FGLOW[k]=c}
 function puff(R,a,c){const k=R+'|'+a+'|'+c;if(PUFF[k])return PUFF[k];const L=layer(R*2+1,R*2+1),g=L.getContext('2d');if(g&&g.fillRect){g.fillStyle=c;
   for(let dy=-R;dy<=R;dy++){const hw=Math.floor(Math.sqrt(R*R-dy*dy));for(let dx=-hw;dx<=hw;dx++)if(dith(dx+R,dy+R,a))g.fillRect(dx+R,dy+R,1,1)}}return PUFF[k]=L}
 
@@ -612,9 +622,10 @@ function cityUpdate(s){
   C.screensOn=C.dead?Math.max(0,C.screensOn-s*1.5):Math.min(1,C.screensOn+s*.8);
   let fg=0;
   for(const f of C.fires){const tg=Math.max(0,Math.min(1,(H_-f.th)/.08));f.I+=(tg-f.I)*(1-Math.exp(-s/2.5));fg=Math.max(fg,f.I);
-    if(f.I>.05){f.sm+=s*f.I*5;while(f.sm>1){f.sm--;C.smoke.push({x:f.x+1+(Math.random()-.5)*4*f.I,y:f.y-4-8*f.I,vx:4+Math.random()*5,vy:-(7+Math.random()*7),r:1,life:5+Math.random()*4,age:0,c:PAL.smoke[Math.floor(Math.random()*3)]})}
+    if(f.I>.05){f.sm+=s*f.I*(Q<2?2.5:5);while(f.sm>1){f.sm--;C.smoke.push({x:f.x+1+(Math.random()-.5)*4*f.I,y:f.y-4-8*f.I,vx:4+Math.random()*5,vy:-(7+Math.random()*7),r:1,life:5+Math.random()*4,age:0,c:PAL.smoke[Math.floor(Math.random()*3)]})}
       if(Math.random()<s*f.I*3)C.sparks.push({x:f.x+1,y:f.y,vx:(Math.random()-.5)*10,vy:-(10+Math.random()*15),g:25,life:.8+Math.random()*.6,age:0,c:'#ffc24a'})}}
   C.fireGlow=fg*.9;
+  if(C.smoke.length>(Q===2?140:60))C.smoke.splice(0,C.smoke.length-(Q===2?140:60));
   for(let i=C.smoke.length-1;i>=0;i--){const p=C.smoke[i];p.age+=s;if(p.age>p.life){C.smoke.splice(i,1);continue}p.x+=p.vx*s;p.y+=p.vy*s;p.vy*=Math.exp(-s*.3);p.r=1+p.age*1.1}
   for(let i=C.sparks.length-1;i>=0;i--){const p=C.sparks[i];p.age+=s;if(p.age>p.life||p.y>hor+5){C.sparks.splice(i,1);continue}p.vy+=p.g*s;p.x+=p.vx*s;p.y+=p.vy*s}
   /* падающая вывеска HOTEL */
@@ -668,25 +679,38 @@ function signLit(sg,pw){
 }
 function glowRect(x,y,w,h,c,a){b.globalCompositeOperation='lighter';b.globalAlpha=a;b.fillStyle=c;b.fillRect(x-2,y-2,w+4,h+4);b.globalAlpha=1;b.globalCompositeOperation='source-over'}
 function drawSign(sg,ox,oy,forceOn){
-  const pw=C.rects[sg.ri]?C.rects[sg.ri].pw:1,on=forceOn!=null?forceOn:signLit(sg,pw),x=Math.round(sg.x+(ox||0)),y=Math.round(sg.y+(oy||0)),t=C.t;
-  const col=on?sg.col:off(sg.col),chars=[...sg.txt];
+  const pw=C.rects[sg.ri]?C.rects[sg.ri].pw:1,on=forceOn!=null?forceOn:signLit(sg,pw),x=Math.round(sg.x+(ox||0)),y=Math.round(sg.y+(oy||0)),t=C.t,n=[...sg.txt].length;
+  /* состояние вывески сводим к ключу и берём готовую картинку из кэша */
+  const st={on:!!on,seq:-1,brk:0,pul:5,bowl:0};
+  if(on){if(sg.mode==='seq'){const k=Math.floor(t/350)%(n+3);st.seq=k<n?k:-1}
+    if(sg.mode==='broken')st.brk=Math.sin(t/37)>0?1:0;
+    if(sg.mode==='pulse')st.pul=Math.round((.55+.45*Math.sin(t/260))*5);
+    if(sg.icon==='bowl')st.bowl=Math.floor(t/300)%2}
+  const key=(st.on?1:0)+'|'+st.seq+'|'+st.brk+'|'+st.pul+'|'+st.bowl;
+  sg.cache=sg.cache||{};let c=sg.cache[key];
+  if(!c){c=layer(sg.w,sg.h);const g=c.getContext('2d');if(g&&g.fillRect){const prev=b;b=g;paintSign(sg,st);b=prev}sg.cache[key]=c}
+  b.drawImage(c,x,y);
+  if(on&&sg.mode==='chase'){const per=2*(sg.w+sg.h),p=Math.floor(t/60)%per;b.fillStyle='#ffffff';
+    for(let k=0;k<per;k+=6){const q=(k+p)%per;let px,py;if(q<sg.w){px=x+q;py=y}else if(q<sg.w+sg.h){px=x+sg.w-1;py=y+q-sg.w}else if(q<2*sg.w+sg.h){px=x+sg.w-1-(q-sg.w-sg.h);py=y+sg.h-1}else{px=x;py=y+sg.h-1-(q-2*sg.w-sg.h)}b.fillRect(px,py,1,1)}}
+  if(on)glowRect(x,y,sg.w,sg.h,sg.col,.11);
+}
+function paintSign(sg,st){
+  const x=0,y=0,on=st.on,col=on?sg.col:off(sg.col),chars=[...sg.txt];
   b.fillStyle='#05090a';b.fillRect(x,y,sg.w,sg.h);
   b.fillStyle=col;b.fillRect(x,y,sg.w,1);b.fillRect(x,y+sg.h-1,sg.w,1);b.fillRect(x,y,1,sg.h);b.fillRect(x+sg.w-1,y,1,sg.h);
-  if(sg.mode==='chase'&&on){const per=sg.k==='v'?2*(sg.w+sg.h):2*(sg.w+sg.h),p=Math.floor(t/60)%per;b.fillStyle='#ffffff';for(let k=0;k<per;k+=6){const q=(k+p)%per;let px,py;if(q<sg.w){px=x+q;py=y}else if(q<sg.w+sg.h){px=x+sg.w-1;py=y+q-sg.w}else if(q<2*sg.w+sg.h){px=x+sg.w-1-(q-sg.w-sg.h);py=y+sg.h-1}else{px=x;py=y+sg.h-1-(q-2*sg.w-sg.h)}b.fillRect(px,py,1,1)}}
   if(sg.k==='v'){
     chars.forEach((ch,i)=>{let c=col;
-      if(on&&sg.mode==='seq'){const st=Math.floor(t/350)%(chars.length+3);if(st<chars.length&&i>st)c=off(sg.col)}
-      if(on&&sg.mode==='broken'&&i===2&&Math.sin(t/37)>0)c=off(sg.col);
+      if(on&&st.seq>=0&&i>st.seq)c=off(sg.col);
+      if(on&&st.brk&&i===2)c=off(sg.col);
       if(sg.cjk){if(ch==='ー'){b.fillStyle=c;b.fillRect(x+Math.floor(sg.w/2)-1,y+4+i*sg.cell,2,sg.cell-4)}else drawCJK(b,ch,13,x+2,y+2+i*sg.cell,c)}else pxText(b,ch,x+Math.round((sg.w-textW(ch))/2),y+3+i*sg.cell,c)});
   }else{
     let cx=x+3;
     if(sg.lantern){drawCJK(b,sg.txt,11,x+1,y+1,col)}
-    else{if(sg.icon==='bowl'){b.fillStyle=col;b.fillRect(cx,y+5,7,1);b.fillRect(cx+1,y+6,5,1);b.fillRect(cx+2,y+7,3,1);b.fillRect(cx+2,y+2+(Math.floor(t/300)%2),1,2);b.fillRect(cx+4,y+1+(Math.floor(t/300+1)%2),1,2);cx+=9}
+    else{if(sg.icon==='bowl'){b.fillStyle=col;b.fillRect(cx,y+5,7,1);b.fillRect(cx+1,y+6,5,1);b.fillRect(cx+2,y+7,3,1);b.fillRect(cx+2,y+2+st.bowl,1,2);b.fillRect(cx+4,y+1+(1-st.bowl),1,2);cx+=9}
       if(sg.icon==='glass'){b.fillStyle=col;b.fillRect(cx,y+2,5,1);b.fillRect(cx+1,y+3,3,1);b.fillRect(cx+2,y+4,1,3);b.fillRect(cx+1,y+7,3,1);cx+=8}
-      let c=col;if(on&&sg.mode==='pulse')c=mix(off(sg.col),sg.col,.55+.45*Math.sin(t/260));
+      let c=col;if(on&&sg.mode==='pulse')c=mix(off(sg.col),sg.col,st.pul/5);
       pxText(b,sg.txt,cx,y+2,c)}
   }
-  if(on)glowRect(x,y,sg.w,sg.h,sg.col,.11);
 }
 function drawEye(){
   const E=C.eye;if(!E)return;const x=E.x,y=E.y,w=E.w,h=E.h,on=C.screensOn*(C.rects[E.ri]?C.rects[E.ri].pw:1);
@@ -746,11 +770,17 @@ function drawKoi(){
   if(!K.pts.length)for(let i=0;i<=N;i++)K.pts.push({x:lx-i*seg,y:ly});
   K.pts[0].x=lx;K.pts[0].y=ly;
   for(let i=1;i<=N;i++){const a=K.pts[i-1],p=K.pts[i],dx=p.x-a.x,dy=p.y-a.y,d=Math.hypot(dx,dy)||1;p.x=a.x+dx/d*seg;p.y=a.y+dy/d*seg}
-  const g=C.koiC.getContext('2d');if(!g||!g.clearRect)return;g.clearRect(0,0,w,h);
+  const g=C.koiC.getContext('2d');if(!g||!g.clearRect)return;
+  K.fr=(K.fr||0)+1;const redraw=Q===2||K.fr%2===0||!K.bb;
   const red=sstep(.6,.9,H_),body=mix('#3fb8c8','#b8323e',red),edge=mix('#b8fbff','#ff8a7a',red),spot=mix('#ff7ac8','#ffc24a',red),fin=mix('#5fe0f0','#ff4a4a',red);
   const tt=C.t/1000,P=[];
   for(let i=0;i<=N;i++){const a=K.pts[Math.max(0,i-1)],c=K.pts[Math.min(N,i+1)],dx=c.x-a.x,dy=c.y-a.y,d=Math.hypot(dx,dy)||1,nx=-dy/d,ny=dx/d,o=Math.sin(tt*3-i*.55)*2.2*(i/N);P.push({x:K.pts[i].x+nx*o,y:K.pts[i].y+ny*o,nx,ny})}
   const rw=i=>{const f=i/N;return L*.088*(f<.18?.6+f/.18*.4:1-Math.pow((f-.18)/.82,1.3)*.82)};
+  /* работаем только в рамке вокруг рыбы, а не по всему холсту */
+  if(redraw){
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const p of P){if(p.x<x0)x0=p.x;if(p.x>x1)x1=p.x;if(p.y<y0)y0=p.y;if(p.y>y1)y1=p.y}
+  const mg=Math.ceil(L*.2)+6;x0=Math.max(0,Math.floor(x0-mg));y0=Math.max(0,Math.floor(y0-mg));x1=Math.min(w,Math.ceil(x1+mg));y1=Math.min(h,Math.ceil(y1+mg));
+  const bb=K.bb||{x:0,y:0,w,h};g.clearRect(bb.x,bb.y,bb.w,bb.h);K.bb={x:x0,y:y0,w:Math.max(1,x1-x0),h:Math.max(1,y1-y0)};const B2=K.bb;
   g.fillStyle=fin;
   for(const sgn of [-1,1]){const p=P[4];for(let k=0;k<7;k++){const out=rw(4)+2+k*1.1;pxCircle(g,p.x-(P[3].x-P[5].x)*.25*k+p.nx*sgn*out,p.y-(P[3].y-P[5].y)*.25*k+p.ny*sgn*out,Math.max(.6,2.4-k*.3))}}
   const tl=P[N],tb=P[N-3],tdx=tl.x-tb.x,tdy=tl.y-tb.y,td=Math.hypot(tdx,tdy)||1,ux=tdx/td,uy=tdy/td;
@@ -760,19 +790,19 @@ function drawKoi(){
   g.fillStyle=spot;[[3,.55,1],[5,.7,-1],[9,.6,1],[10,.45,-1],[13,.4,1]].forEach(([i,k,sd])=>pxCircle(g,P[i].x+P[i].nx*sd*2,P[i].y+P[i].ny*sd*2,rw(i)*k));
   g.fillStyle=edge;for(let i=5;i<12;i++)g.fillRect(Math.round(P[i].x),Math.round(P[i].y),1,1);
   g.fillStyle='#06141a';for(const sgn of [-1,1])g.fillRect(Math.round(P[1].x+P[1].nx*sgn*rw(1)*.55),Math.round(P[1].y+P[1].ny*sgn*rw(1)*.55),1,1);
-  g.globalCompositeOperation='destination-out';const so=Math.floor(tt*10)%4;for(let y=so;y<h;y+=4)g.fillRect(0,y,w,1);g.globalCompositeOperation='source-over';
+  g.globalCompositeOperation='destination-out';const so=Math.floor(tt*10)%4;for(let y=B2.y+((so-B2.y)%4+4)%4;y<B2.y+B2.h;y+=4)g.fillRect(B2.x,y,B2.w,1);g.globalCompositeOperation='source-over';
+  }
+  const B2=K.bb;
   const flick=K.glitch>0&&Math.random()<.5?.25:1;
   b.globalCompositeOperation='lighter';b.globalAlpha=.62*K.vis*flick;
   if(K.vis<.99){const kh=Math.max(1,Math.round(h*K.vis)),cy=Math.round(ly);b.drawImage(C.koiC,0,0,w,h,0,cy-kh*(cy/h),w,kh)}
-  else if(K.glitch>0){for(let y=0;y<h;y+=4){const dx=Math.random()<.3?Math.round((Math.random()-.5)*10*(.4+H_)):0;b.drawImage(C.koiC,0,y,w,4,dx,y,w,4)}}
-  else b.drawImage(C.koiC,0,0);
+  else if(K.glitch>0){for(let y=B2.y;y<B2.y+B2.h;y+=4){const hh=Math.min(4,B2.y+B2.h-y),dx=Math.random()<.3?Math.round((Math.random()-.5)*10*(.4+H_)):0;b.drawImage(C.koiC,B2.x,y,B2.w,hh,B2.x+dx,y,B2.w,hh)}}
+  else b.drawImage(C.koiC,B2.x,B2.y,B2.w,B2.h,B2.x,B2.y,B2.w,B2.h);
   b.globalAlpha=1;b.globalCompositeOperation='source-over';
 }
 function drawFire(f){
   const I=f.I;if(I<.03)return;const x=f.x,y=f.y,R=Math.round(5+15*I);
-  b.globalCompositeOperation='lighter';
-  for(let yy=-R;yy<=R;yy++)for(let xx=-R;xx<=R;xx++){const d=Math.hypot(xx,yy*1.2)/R;if(d<1&&dith(x+xx,y+yy-4,(1-d)*.55*I)){b.fillStyle=d<.45?'#7a3a14':'#4a1e10';b.fillRect(x+xx,y+yy-4,1,1)}}
-  b.globalCompositeOperation='source-over';
+  b.globalCompositeOperation='lighter';b.drawImage(fireGlow(R,Math.max(1,Math.round(I*4))),x-R,y-4-R);b.globalCompositeOperation='source-over';
   const r=srnd(Math.floor(C.t/60)+x*13),fw=Math.round(2+6*I),fh=Math.round(3+13*I);
   b.fillStyle='#2a0e08';b.fillRect(x-Math.floor(fw/2),y,fw+2,3);
   for(let i=0;i<fw*fh*.9;i++){const fx=x-Math.floor(fw/2)+Math.floor(r()*(fw+2)),k=Math.pow(r(),1.6),hgt=Math.floor(k*fh),edge=Math.abs(fx-x-.5)/(fw/2+1);if(hgt>fh*(1-edge*.8))continue;
@@ -790,6 +820,7 @@ function drawBooms(s){
 function drawBg(t,dt){
   if(!C.sky)return;
   const s=Math.min(dt,100)/1000;C.t+=dt;cityUpdate(s);
+  b=C.UG&&C.UG.drawImage?C.UG:B0;                                       /* всё выше дороги рисуем в отдельный холст: из него же берём отражение */
   const w=C.w,h=C.h,hor=C.hor,H_=C.heat;
   b.globalAlpha=1;b.globalCompositeOperation='source-over';
   b.drawImage(C.sky,0,0);
@@ -829,9 +860,12 @@ function drawBg(t,dt){
     b.save();b.translate(hx,sg.y+F.y);b.rotate(F.a*dirA);drawSign(sg,-hx+(F.st==='shake'?Math.round((Math.random()-.5)*2):0),-sg.y,F.st==='shake'?Math.random()<.5:1);b.restore()}
   for(const p of C.people)if(!p.near)drawPerson(p);
   /* мокрая дорога: отражение города с рябью, разметка, машины */
+  if(b!==B0){b=B0;b.drawImage(C.U,0,0)}
   b.fillStyle='#060d0f';b.fillRect(0,hor+6,w,h-hor-6);
   b.globalAlpha=.3;
-  for(let k=0;k<h-hor-6;k++){const sy=hor+5-k;if(sy<0)break;const dx=Math.round(Math.sin(k*.9+C.t*.004)*Math.min(3,k*.08));b.drawImage(bg,0,sy,w,1,dx,hor+6+k,w,1)}
+  const RH=h-hor-6;
+  if(Q<1){b.save();b.translate(0,2*hor+11);b.scale(1,-1);b.drawImage(C.U,0,hor+5-RH,w,RH,0,hor+5-RH,w,RH);b.restore()}
+  else{const bs=Q===2?2:4;for(let k=0;k<RH;k+=bs){const sy=hor+6-bs-k;if(sy<0)break;const dx=Math.round(Math.sin(k*.9+C.t*.004)*Math.min(3,k*.08));b.drawImage(C.U,0,sy,w,bs,dx,hor+6+k,w,bs)}}
   b.globalAlpha=1;
   b.fillStyle='rgba(3,8,10,.35)';for(let y=hor+7;y<h;y+=2)b.fillRect(0,y,w,1);
   b.fillStyle='#3a4a40';for(let x=(Math.floor(C.t/1e9))%12;x<w;x+=12)b.fillRect(x,C.laneA+3,6,1);
@@ -841,15 +875,13 @@ function drawBg(t,dt){
   for(const p of C.people)if(p.near)drawPerson(p);
   /* полиция в воздухе */
   for(const p of C.spinners){const x=Math.round(p.x),y=Math.round(p.y+Math.sin(p.ph*2)*2),ang=Math.sin(p.a)*.5,bx=x+3;
-    b.globalCompositeOperation='lighter';
-    for(let yy=y+3;yy<hor+6;yy++){const k=(yy-y)/(hor-y),cx=bx+Math.tan(ang)*(yy-y),hw=1+k*14;for(let xx=Math.round(cx-hw);xx<=cx+hw;xx++)if(dith(xx,yy,.16+.14*(1-k))){b.fillStyle='#4a5c62';b.fillRect(xx,yy,1,1)}}
-    b.globalCompositeOperation='source-over';
+    if(Q>0){const L=Math.max(4,hor+6-y-3),ai=Math.round(ang*16),sp=beam(L,ai),sw=sp.c.width;b.globalCompositeOperation='lighter';b.drawImage(sp.c,0,0,sw,L,bx-sp.ox,y+3,sw,L);b.globalCompositeOperation='source-over'}
     b.fillStyle='#0b1416';b.fillRect(x,y,7,2);b.fillRect(x+2,y-1,3,1);
     const ph=Math.floor(C.t/110)%2;b.fillStyle=ph?'#ff3b4a':'#6f9bff';b.fillRect(x,y-1,2,1);b.fillStyle=ph?'#6f9bff':'#ff3b4a';b.fillRect(x+5,y-1,2,1);
     b.globalCompositeOperation='lighter';b.drawImage(puff(4,.5,ph?'#ff3b4a':'#6f9bff'),x-4+(ph?0:5),y-5);b.globalCompositeOperation='source-over'}
   for(const p of C.smoke){const a=Math.round((1-p.age/p.life)*.7*8)/8,R=Math.min(9,Math.round(p.r));if(a>0)b.drawImage(puff(R,a,p.c),Math.round(p.x)-R,Math.round(p.y)-R)}
   for(const p of C.sparks){b.fillStyle=p.c;b.fillRect(Math.round(p.x),Math.round(p.y),1,1)}
-  const nR=Math.round(C.rain.length*(.55+.45*H_));b.fillStyle='#8fb4b8';
+  const nR=Math.round(C.rain.length*(.55+.45*H_)*(Q<2?.5:1));b.fillStyle='#8fb4b8';
   for(let i=0;i<nR;i++){const d=C.rain[i];d.y+=d.v*(1+H_*.3)*s;d.x-=d.v*.18*s;if(d.y>h){d.y=-4;d.x=Math.random()*w*1.15}
     b.globalAlpha=.18+d.z*.25;const x=Math.round(d.x),y=Math.round(d.y);b.fillRect(x,y,1,1);b.fillRect(x+1,y-2,1,1);if(d.z>.6)b.fillRect(x+1,y-1,1,1)}
   b.globalAlpha=1;
@@ -1115,6 +1147,10 @@ function stepParticles(dt){
     }else{p.x=ox;p.y=oy;p.vx=-p.vx*p.bounce;p.vy=-p.vy*p.bounce}
   }
 }
+/* огненный шар один раз рисуется в заготовку, дальше только масштабируется */
+let FB=null;
+function fireBall(){if(FB)return FB;FB=document.createElement('canvas');FB.width=FB.height=64;const g=FB.getContext('2d');
+  if(g&&g.createRadialGradient){const gr=g.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,250,210,1)');gr.addColorStop(.35,'rgba(255,170,30,.9)');gr.addColorStop(1,'rgba(200,30,0,0)');g.fillStyle=gr;g.fillRect(0,0,64,64)}return FB}
 function drawParticles(){
   for(const p of PT){
     if(p.delay>0)continue;
@@ -1163,9 +1199,8 @@ function drawParticles(){
         x.globalAlpha=.32*(1-k);x.fillStyle=p.c||'#9fc7c0';
         x.beginPath();x.arc(p.x,p.y,p.s+(p.s2||10)*k,0,7);x.fill();break}
       case 'fire':{
-        const r=p.r0+(p.r1-p.r0)*k,g=x.createRadialGradient(p.x,p.y,0,p.x,p.y,r);
-        g.addColorStop(0,'rgba(255,250,210,1)');g.addColorStop(.35,'rgba(255,170,30,.9)');g.addColorStop(1,'rgba(200,30,0,0)');
-        x.globalCompositeOperation='lighter';x.globalAlpha=1-k*k;x.fillStyle=g;x.beginPath();x.arc(p.x,p.y,r,0,7);x.fill();
+        const r=p.r0+(p.r1-p.r0)*k;
+        x.globalCompositeOperation='lighter';x.globalAlpha=1-k*k;x.drawImage(fireBall(),p.x-r,p.y-r,r*2,r*2);
         x.globalCompositeOperation='source-over';break}
       case 'smoke':{
         x.globalAlpha=.45*(1-k)*Math.min(1,k*6);x.fillStyle='#3e4a52';
@@ -1196,11 +1231,11 @@ function boom(e){
   addP({k:'ring',x:150,y:cy,r1:200,lw:5,c:'#ffffff',life:500,delay:60});
   addP({k:'fire',x:150,y:cy,r0:20,r1:130,life:800});
   for(let i=0;i<14;i++)addP({k:'fire',x:rnd(10,290),y:e.rows[i%e.rows.length]*S+rnd(0,S),vx:rnd(-40,40),vy:rnd(-90,-10),r0:rnd(12,24),r1:rnd(45,80),life:rnd(500,850),delay:rnd(0,220),drag:.3});
-  for(let i=0;i<70;i++){const a=rnd(0,6.283),v=rnd(140,520);addP({k:'spark',x:150+rnd(-60,60),y:cy+rnd(-20,20),vx:Math.cos(a)*v,vy:Math.sin(a)*v-120,g:900,life:rnd(500,1100),s:rnd(1.4,3.2),col:true,bounce:.45,fric:.7})}
+  for(let i=0;i<(Q===2?70:35);i++){const a=rnd(0,6.283),v=rnd(140,520);addP({k:'spark',x:150+rnd(-60,60),y:cy+rnd(-20,20),vx:Math.cos(a)*v,vy:Math.sin(a)*v-120,g:900,life:rnd(500,1100),s:rnd(1.4,3.2),col:true,bounce:.45,fric:.7})}
   for(let i=0;i<12;i++)addP({k:'smoke',x:rnd(20,280),y:cy+rnd(-40,40),vx:rnd(-15,15),vy:rnd(-50,-15),r0:rnd(16,26),r1:rnd(50,80),life:rnd(800,1200),delay:rnd(150,450)});
   e.rows.forEach((r,ri)=>{for(let c=0;c<W;c++){
     const col=COL[e.gone[ri][c]]||'#6fe0c8';
-    for(let j=0;j<2;j++){const px=c*S+rnd(6,S-6),py=r*S+rnd(6,S-6),dx=px-150,dy=py-cy,d=Math.hypot(dx,dy)+30,v=rnd(260,620);
+    for(let j=0;j<(Q===2||c%2?2:1);j++){const px=c*S+rnd(6,S-6),py=r*S+rnd(6,S-6),dx=px-150,dy=py-cy,d=Math.hypot(dx,dy)+30,v=rnd(260,620);
       addP({k:'chunk',x:px,y:py,vx:dx/d*v+rnd(-60,60),vy:dy/d*v-rnd(160,380),g:1400,rot:rnd(0,6.3),vr:rnd(-16,16),w:rnd(7,13),h:rnd(6,11),c:col,life:rnd(900,1500),col:true,bounce:.38,fric:.72})}
   }});
 }
@@ -1224,8 +1259,8 @@ function updateFx(dt){
     if(e.n===2&&!e.burst&&t>=170){e.burst=true;                         /* сбой: распад на пиксели */
       e.rows.forEach((r,ri)=>{for(let c=0;c<W;c++){
         const col=COL[e.gone[ri][c]]||'#6fe0c8';
-        for(let a=0;a<3;a++)for(let b2=0;b2<3;b2++){
-          const px=c*S+5+a*10,py=r*S+5+b2*10,bad=Math.random()<.18;
+        const pn=Q===2?3:2;for(let a=0;a<pn;a++)for(let b2=0;b2<pn;b2++){
+          const px=c*S+Math.round((a+.5)*S/pn),py=r*S+Math.round((b2+.5)*S/pn),bad=Math.random()<.18;
           addP({k:'pix',x:px,y:py,vx:(px-150)*rnd(.5,1.6)+rnd(-90,90),vy:rnd(-320,-40),g:1350,s:rnd(4,8),c:bad?'#ff2a6d':tint(col,rnd(.6,1.05)),c2:bad?'#27f5e3':tint(col,1.35),
             glitch:Math.random()<.5,life:rnd(520,950),col:true,bounce:.35,fric:.6,rot:0});
         }
@@ -1503,7 +1538,10 @@ function frame(t){
     }
   }
   if(state==='run'||state==='over'){updateFx(dt);stepParticles(dt);stepFall(dt)}
-  drawBg(t,dt);
+  /* фон — пиксель-арт, ему хватает 30 кадров в секунду; поле рисуется каждый кадр */
+  if(!document.hidden){fpsEma+=(dt-fpsEma)*.05;
+    if(state!=='menu'&&fpsEma>21){slowT+=dt;if(slowT>1500&&Q>0){Q--;slowT=0;BG_IV=Q===1?50:70;fpsEma=16.7}}else slowT=Math.max(0,slowT-dt)}
+  bgAcc+=dt;if(bgAcc>=BG_IV){drawBg(t,Math.min(bgAcc,100));bgAcc=0}
   if(state!=='menu')render();
   requestAnimationFrame(frame);
 }
