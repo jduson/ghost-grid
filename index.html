@@ -50,6 +50,9 @@ body.mode-classic .ghost-only{display:none!important}
 .pad{display:none;gap:8px}
 .pad button{width:52px;height:46px;display:flex;align-items:center;justify-content:center;background:#071012;border:2px solid var(--line2);color:var(--teal);touch-action:none}
 .pad button:active,.pad button.held{background:#11292a;border-color:var(--teal)}
+.pad [data-a="down"]{position:relative;overflow:hidden}.pad [data-a="down"] svg{position:relative}
+.pad [data-a="down"]::after{content:"";position:absolute;inset:0;background:rgba(111,224,200,.28);transform:scaleY(0);transform-origin:top}
+.pad [data-a="down"].held::after{transform:scaleY(1);transition:transform .3s linear}
 .pad button:disabled{opacity:.3}
 .pad svg,.ovb svg.ic{width:20px;height:20px;shape-rendering:crispEdges;fill:currentColor}
 @media (hover:none){
@@ -1879,7 +1882,14 @@ function padHold(a,fn,first){
 padHold('left',()=>move(-1),[170,55]);
 padHold('right',()=>move(1),[170,55]);
 padHold('rot',()=>tryRotate());
-padHold('down',f=>{if(f){btnFast=true;fastStart=performance.now();drop();acc=0}});
+/* ↓: короткое нажатие — шаг вниз, удержание 0,3 с — фигура сразу падает до конца (только та, на которой нажали) */
+(function(){const el=P('down');if(!el)return;let t=null,pid=-1;
+  const stop=()=>{if(t){clearTimeout(t);t=null}if(el.classList)el.classList.remove('held')};
+  el.addEventListener('pointerdown',e=>{e.preventDefault();if(state!=='run')return;if(el.setPointerCapture&&e.pointerId!=null)try{el.setPointerCapture(e.pointerId)}catch(x){}
+    stop();if(el.classList)el.classList.add('held');pid=spawnN;drop();acc=0;
+    t=setTimeout(()=>{t=null;if(state==='run'&&pid===spawnN&&!lockHold&&cur)hardDrop();if(el.classList)el.classList.remove('held')},300)});
+  ['pointerup','pointercancel','lostpointercapture'].forEach(n=>el.addEventListener(n,stop));
+})();
 P('pause').addEventListener('pointerdown',e=>{e.preventDefault();if(state==='run')pause(true);else if(state==='pause')pause(false)});
 [['pResume',()=>pause(false)],['pRestart',()=>start()],['pMenu',()=>toMenu()],['oUndo',()=>undo()],['oAgain',()=>start()],['oMenu',()=>toMenu()]]
   .forEach(([id,fn])=>$(id).addEventListener('click',e=>{fn();blurActive()}));
