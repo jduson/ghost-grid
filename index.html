@@ -454,6 +454,11 @@ function render(){
     x.fillStyle='#4ff0d8';x.fillText(msg[0],151.5,290);
     x.fillStyle='#ffffff';x.fillText(msg[0],150,290);
     x.fillStyle='#b69cff';x.font='14px '+MONO;x.fillText(msg[1],150,322);
+    if(state==='ready'&&touch){
+      x.fillStyle='rgba(230,222,250,.7)';x.font='10.5px '+MONO;
+      x.fillText('Свайп ←/→ — двигать, ↓ — опускать',150,362);
+      x.fillText('Быстрый свайп ↓ — сразу вниз, тап — поворот',150,380);
+    }
     x.restore();
   }
 }
@@ -519,7 +524,51 @@ const dn=P('down');
 dn.addEventListener('pointerdown',e=>{e.preventDefault();dn.classList.add('on');if(state==='run'){btnFast=true;fastStart=performance.now();drop();acc=0}else act(()=>{})()});
 ['pointerup','pointercancel','pointerleave'].forEach(ev=>dn.addEventListener(ev,()=>{btnFast=false;dn.classList.remove('on')}));
 P('pause').addEventListener('pointerdown',e=>{e.preventDefault();if(state==='run')state='pause';else if(state==='pause')state='run';else start()});
-cv.addEventListener('pointerdown',()=>{if(state==='ready'||state==='over')start();else if(state==='pause')state='run'});
+cv.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')return;if(state==='ready'||state==='over')start();else if(state==='pause')state='run'});
+
+/* --- свайпы и тап на телефоне: ←/→ двигают, ↓ опускает, быстрый свайп ↓ сбрасывает, тап вращает --- */
+let sw=null;
+const cellPx=()=>(cv.getBoundingClientRect().width||300)/W;
+function tapAction(){
+  if(state==='ready'||state==='over')start();
+  else if(state==='pause')state='run';
+  else if(state==='run'&&!lockHold)tryRotate();
+}
+function swDown(e){
+  if(e.pointerType==='mouse'||sw)return;
+  if(e.target&&e.target.closest&&e.target.closest('button'))return;
+  const n=performance.now();
+  sw={id:e.pointerId,x0:e.clientX,y0:e.clientY,ax:e.clientX,ay:e.clientY,t0:n,moved:false,hist:[{t:n,y:e.clientY}]};
+}
+function swMove(e){
+  if(!sw||e.pointerId!==sw.id)return;
+  const n=performance.now(),cp=cellPx(),sx=cp*.8,sy=cp*1.1;
+  sw.hist.push({t:n,y:e.clientY});if(sw.hist.length>8)sw.hist.shift();
+  if(!sw.moved&&Math.hypot(e.clientX-sw.x0,e.clientY-sw.y0)>12)sw.moved=true;
+  if(!sw.moved||state!=='run'||lockHold){sw.ax=e.clientX;sw.ay=e.clientY;return}
+  while(e.clientX-sw.ax>=sx){move(1);sw.ax+=sx}
+  while(sw.ax-e.clientX>=sx){move(-1);sw.ax-=sx}
+  if(e.clientY<sw.ay)sw.ay=e.clientY;
+  while(e.clientY-sw.ay>=sy){
+    sw.ay+=sy;
+    if(!drop()){sw.ay=e.clientY;break}
+  }
+}
+function swUp(e){
+  if(!sw||e.pointerId!==sw.id)return;
+  const s=sw;sw=null;
+  if(!s.moved){if(performance.now()-s.t0<350)tapAction();return}
+  if(state==='run'&&!lockHold){
+    const dyT=e.clientY-s.y0,dxT=e.clientX-s.x0,h=s.hist,last=h[h.length-1];
+    let first=last;for(const p of h)if(last.t-p.t<=100){first=p;break}
+    const vy=(last.y-first.y)/Math.max(1,last.t-first.t);
+    if(dyT>cellPx()*2&&vy>.9&&Math.abs(dxT)<dyT*.7)hardDrop();
+  }
+}
+document.addEventListener('pointerdown',swDown);
+document.addEventListener('pointermove',swMove);
+document.addEventListener('pointerup',swUp);
+document.addEventListener('pointercancel',()=>{sw=null});
 
 board=Array.from({length:H},()=>Array(W).fill(0));
 ui();
