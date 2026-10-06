@@ -51,25 +51,6 @@ body.mode-classic .ghost-only{display:none!important}
 .pad button{width:52px;height:46px;display:flex;align-items:center;justify-content:center;background:#071012;border:2px solid var(--line2);color:var(--teal);touch-action:none}
 .pad button:active{background:#11292a}
 .pad button:disabled{opacity:.3}
-.sndbar{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:14px;z-index:5;display:flex;gap:8px}
-.snd{display:flex;align-items:center;gap:9px;padding:9px 11px;font-size:14px;line-height:0;color:var(--muted);background:#050b0c;border:2px solid var(--line2);cursor:pointer}
-.snd.on{color:var(--teal)}.snd:hover,.snd:focus-visible{border-color:var(--teal);outline:none}
-.snd svg.ic{width:18px;height:18px;shape-rendering:crispEdges;fill:currentColor}
-/* мини-плеер YouTube: эфир виден, его можно поставить на паузу или переключить */
-.yt{position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:6;width:240px;padding:6px;background:#050b0c;border:2px solid var(--line2)}
-.yt.hide{display:none}
-.ythd{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:12px;line-height:0;color:var(--teal)}
-.ythd small{font-family:var(--mono);font-size:10px;line-height:1.2;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#ytbox{width:224px;height:126px;background:#020506;display:flex;align-items:center;justify-content:center;padding:0 12px;color:var(--muted);font:11px/1.4 var(--mono);text-align:center}
-#ytbox iframe{width:224px;height:126px;border:0;display:block;margin:0 -12px}
-/* на телефоне плеер — полоска внизу, а поле чуть ниже ростом, чтобы ничего не перекрывалось */
-@media (hover:none){
- .yt{left:50%;right:auto;transform:translateX(-50%);bottom:calc(8px + env(safe-area-inset-bottom,0px));width:auto;max-width:94vw;padding:4px;display:flex;flex-direction:row-reverse;align-items:center;gap:8px}
- .ythd{flex-direction:column;align-items:flex-start;margin:0;width:118px}.ythd small{white-space:normal}
- #ytbox,#ytbox iframe{width:160px;height:90px}#ytbox{padding:0 8px;font-size:10px}#ytbox iframe{margin:0 -8px}
- body.hasyt{padding-bottom:calc(108px + env(safe-area-inset-bottom,0px))}
- body.hasyt #field{height:min(52dvh,600px,calc(100dvh - 262px))}
-}
 .pad svg,.ovb svg.ic{width:20px;height:20px;shape-rendering:crispEdges;fill:currentColor}
 @media (hover:none){
  .wrap{flex-direction:column;align-items:center;gap:8px}
@@ -174,7 +155,6 @@ body.mode-classic .ghost-only{display:none!important}
 <canvas id="bg"></canvas>
 <div id="ach"><small>Достижение</small><b data-px="Квадро"></b><span>4 линии за один ход</span></div>
 <div id="menu" class="on">
-  <div class="sndbar"><button class="snd on" id="mSnd" aria-label="Музыка"><svg class="ic" viewBox="0 0 10 10"><path d="M1 3h2v4h-2zM3 2h1v6h-1zM4 1h1v8h-1zM6 3h1v4h-1zM8 2h1v6h-1z"/></svg><span id="mSndL" data-px="Музыка"></span></button><button class="snd on" id="mCity" aria-label="Звуки города"><svg class="ic" viewBox="0 0 10 10"><path d="M0 5h3v5h-3zM3 1h3v9h-3zM7 3h3v7h-3z"/></svg><span id="mCityL" data-px="Город"></span></button></div>
   <div class="mwrap">
     <h1 class="logo" aria-label="GHOST//GRID"><span data-px="GHOST"></span><span class="sl" data-px="//"></span><span data-px="GRID"></span></h1>
     <section class="mpage on" id="pMain">
@@ -195,15 +175,14 @@ body.mode-classic .ghost-only{display:none!important}
       <div class="glist" id="glist"></div>
       <div class="lrow"><button class="back" id="mBack2" data-px="Назад"></button><button class="back dim" id="logClear">очистить</button></div>
     </section>
-    <div class="mfoot"><kbd>↑</kbd><kbd>↓</kbd> выбор &nbsp; <kbd>Enter</kbd> выбрать &nbsp; <kbd>Esc</kbd> назад<span class="sndk"> &nbsp; <kbd>S</kbd> музыка &nbsp; <kbd>G</kbd> город</span></div>
+    <div class="mfoot"><kbd>↑</kbd><kbd>↓</kbd> выбор &nbsp; <kbd>Enter</kbd> выбрать &nbsp; <kbd>Esc</kbd> назад</div>
   </div>
 </div>
-<div class="yt" id="yt"><div class="ythd"><span data-px="Эфир"></span><small id="ytsub">Aethereal Dream · YouTube</small></div><div id="ytbox">нажмите в любом месте, чтобы включить</div></div>
 <div class="wrap">
   <div class="frame"><canvas id="field" width="300" height="600"></canvas>
     <div class="ov" id="ovPause"><div class="ovin"><h2 data-px="Пауза"></h2>
-      <button class="ovb pri" id="pResume"><span data-px="Продолжить"></span></button><button class="ovb" id="pRestart"><span data-px="Заново"></span></button><button class="ovb" id="pMenu"><span data-px="В меню"></span></button><button class="ovb" id="pSnd"><svg class="ic" viewBox="0 0 10 10"><path d="M1 3h2v4h-2zM3 2h1v6h-1zM4 1h1v8h-1zM6 3h1v4h-1zM8 2h1v6h-1z"/></svg><span id="pSndL" data-px="Музыка вкл"></span></button><button class="ovb" id="pCity"><svg class="ic" viewBox="0 0 10 10"><path d="M0 5h3v5h-3zM3 1h3v9h-3zM7 3h3v7h-3z"/></svg><span id="pCityL" data-px="Город вкл"></span></button>
-      <p class="kh"><kbd>P</kbd> &nbsp;<kbd>R</kbd> &nbsp;<kbd>M</kbd><span class="sndk"> &nbsp;<kbd>S</kbd> &nbsp;<kbd>G</kbd></span></p></div></div>
+      <button class="ovb pri" id="pResume"><span data-px="Продолжить"></span></button><button class="ovb" id="pRestart"><span data-px="Заново"></span></button><button class="ovb" id="pMenu"><span data-px="В меню"></span></button>
+      <p class="kh"><kbd>P</kbd> &nbsp;<kbd>R</kbd> &nbsp;<kbd>M</kbd></p></div></div>
     <div class="ov" id="ovOver"><div class="ovin"><h2 data-px="Игра окончена"></h2><div class="rec" id="oRec"><span data-px="Новый рекорд"></span></div>
       <dl class="ost"><div><dt>счёт</dt><dd id="oSc">0</dd></div><div><dt>линии</dt><dd id="oLn">0</dd></div><div><dt>уровень</dt><dd id="oLv">1</dd></div><div><dt>время</dt><dd id="oTm">0:00</dd></div></dl>
       <button class="ovb amb" id="oUndo"><svg class="ic" viewBox="0 0 10 10"><path d="M2 0h1v1h-1zM1 1h1v1h-1zM2 1h1v1h-1zM0 2h1v1h-1zM1 2h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM1 3h1v1h-1zM2 3h1v1h-1zM8 3h1v1h-1zM2 4h1v1h-1zM9 4h1v1h-1zM9 5h1v1h-1zM9 6h1v1h-1zM8 7h1v1h-1zM1 8h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1z"/></svg><span data-px="Отменить ход"></span></button><button class="ovb pri" id="oAgain"><span data-px="Ещё раз"></span></button><button class="ovb" id="oMenu"><span data-px="В меню"></span></button>
@@ -218,11 +197,10 @@ body.mode-classic .ghost-only{display:none!important}
     <div class="box bestbox"><span>Рекорд</span><b id="bs">0</b></div>
     <div class="box nrg ghost-only" id="nrgbox"><span>Энергия <i id="undoN">2 отмены</i></span><div class="cells" id="nrgcells"></div></div>
     <div class="box ghost-only"><span>Вирус</span><b id="vir">0</b></div>
-    <div class="help"><span><kbd>←</kbd><kbd>→</kbd></span><span>двигать</span><span><kbd>↑</kbd></span><span>повернуть</span><span><kbd>↓</kbd></span><span>вниз</span><span><kbd>Пробел</kbd></span><span>поставить</span><span class="ghost-only"><kbd>Z</kbd></span><span class="ghost-only">отменить ход</span><span><kbd>P</kbd></span><span>пауза</span><span class="sndk"><kbd>S</kbd></span><span class="sndk">музыка</span><span class="sndk"><kbd>G</kbd></span><span class="sndk">город</span></div>
+    <div class="help"><span><kbd>←</kbd><kbd>→</kbd></span><span>двигать</span><span><kbd>↑</kbd></span><span>повернуть</span><span><kbd>↓</kbd></span><span>вниз</span><span><kbd>Пробел</kbd></span><span>поставить</span><span class="ghost-only"><kbd>Z</kbd></span><span class="ghost-only">отменить ход</span><span><kbd>P</kbd></span><span>пауза</span></div>
   </div>
   <div class="pad">
     <button class="ghost-only" id="undo" data-a="undo" aria-label="Отменить ход" disabled><svg class="ic" viewBox="0 0 10 10"><path d="M2 0h1v1h-1zM1 1h1v1h-1zM2 1h1v1h-1zM0 2h1v1h-1zM1 2h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM1 3h1v1h-1zM2 3h1v1h-1zM8 3h1v1h-1zM2 4h1v1h-1zM9 4h1v1h-1zM9 5h1v1h-1zM9 6h1v1h-1zM8 7h1v1h-1zM1 8h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1z"/></svg></button>
-    <button data-a="snd" aria-label="Звук"><svg class="ic" viewBox="0 0 10 10"><path d="M1 3h2v4h-2zM3 2h1v6h-1zM4 1h1v8h-1zM6 3h1v4h-1zM8 2h1v6h-1z"/></svg></button>
     <button data-a="pause" aria-label="Пауза"><svg viewBox="0 0 10 10"><path d="M2 1h2v8h-2zM6 1h2v8h-2z"/></svg></button>
   </div>
 </div>
@@ -865,7 +843,7 @@ function cityUpdate(s){
       if(Math.random()<s*25)C.sparks.push({x:sg.x+(sg.x<w/2?sg.w:0),y:sg.y,vx:(Math.random()-.5)*20,vy:-5-Math.random()*10,g:60,life:.5+Math.random()*.4,age:0,c:Math.random()<.5?'#fff2a8':'#ffc24a'});
       if(F.t>1.8){F.st='fall';F.t=0;F.vy=0}}
     else if(F.st==='fall'){F.vy+=120*s;F.y+=F.vy*s;F.a+=s*1.6;
-      if(sg.y+F.y+sg.h*.7>=hor+2){F.st='down';if(typeof sfxBoom==='function')sfxBoom((sg.x-w/2)/(w/2),false);
+      if(sg.y+F.y+sg.h*.7>=hor+2){F.st='down';
         for(let i=0;i<30;i++)C.sparks.push({x:sg.x+Math.random()*sg.h,y:hor+2,vx:(Math.random()-.5)*60,vy:-10-Math.random()*40,g:90,life:.5+Math.random()*.7,age:0,c:i%3?'#ffc24a':'#fff2a8'});
         for(let i=0;i<8;i++)C.smoke.push({x:sg.x+Math.random()*sg.h,y:hor+2,vx:(Math.random()-.5)*8,vy:-3-Math.random()*3,r:1,life:2+Math.random(),age:0,c:PAL.smoke[1]});}}
     else if(F.st==='down'&&H_<.25){F.st='ok';F.a=0;F.y=0;F.t=0}
@@ -1027,7 +1005,7 @@ function drawFire(f){
 }
 let booms=[];
 function drawBooms(s){
-  if(C.heat>.82&&!C.dead&&state==='run'&&Math.random()<(C.heat-.82)*.03){const T=C.rects[Math.floor(Math.random()*C.rects.length)];if(T){const bx=T.x+Math.random()*T.w;booms.push({x:bx,y:Math.max(4,T.top+Math.random()*20),t:0});if(typeof sfxBoom==='function')sfxBoom((bx-C.w/2)/(C.w/2),false)}}
+  if(C.heat>.82&&!C.dead&&state==='run'&&Math.random()<(C.heat-.82)*.03){const T=C.rects[Math.floor(Math.random()*C.rects.length)];if(T)booms.push({x:T.x+Math.random()*T.w,y:Math.max(4,T.top+Math.random()*20),t:0})}
   for(let i=booms.length-1;i>=0;i--){const o=booms[i];o.t+=s;if(o.t>1.2){booms.splice(i,1);continue}
     const R=Math.round(2+o.t*14),a=1-o.t/1.2;b.fillStyle=o.t<.15?'#fff2a8':o.t<.4?'#ffc24a':'#ff7a2a';
     for(let dy=-R;dy<=R;dy++){const hw=Math.floor(Math.sqrt(R*R-dy*dy));for(let dx=-hw;dx<=hw;dx++)if(dith(o.x+dx,o.y+dy,a*(o.t<.4?.9:.4)*(1-Math.hypot(dx,dy)/(R+1))))b.fillRect(Math.round(o.x)+dx,Math.round(o.y)+dy,1,1)}
@@ -1758,7 +1736,6 @@ function frame(t){
     if(state!=='menu'&&fpsEma>21){slowT+=dt;if(slowT>1500&&Q>0){Q--;slowT=0;BG_IV=Q===1?50:70;fpsEma=16.7}}else slowT=Math.max(0,slowT-dt)}
   bgAcc+=dt;if(bgAcc>=BG_IV){drawBg(t,Math.min(bgAcc,100));bgAcc=0}
   if(state!=='menu')render();
-  soundTick(dt);
   requestAnimationFrame(frame);
 }
 
@@ -1838,8 +1815,6 @@ function drawIcons(){
 /* --- клавиатура --- */
 addEventListener('keydown',e=>{
   const k=e.code;
-  if(k==='KeyS'&&!e.repeat){e.preventDefault();toggleMusic();return}
-  if(k==='KeyG'&&!e.repeat){e.preventDefault();toggleCity();return}
   if(state==='menu'){menuKey(e);return}
   if(state==='over'){
     if((k==='Enter'||k==='Space')&&!e.repeat){e.preventDefault();start();return}
@@ -1932,220 +1907,9 @@ document.addEventListener('pointermove',swMove);
 document.addEventListener('pointerup',swUp);
 document.addEventListener('pointercancel',()=>{sw=null});
 
-/* =====================================================================
-   ЗВУК
-   Музыка — эмбиент с YouTube (канал Aethereal Dream) через официальный встроенный плеер:
-   он виден в углу экрана, каждый запуск начинается со случайного места, дальше идёт микс.
-   Город — озвучка, которая синтезируется на лету (Web Audio) и следует за тем, что на экране:
-   дождь, гул, шины по мокрому асфальту по каждой полосе со стерео-панорамой, сирены полиции,
-   гудки, гул неона, треск огня, взрывы; при проигрыше город обесточивается.
-   Браузеры разрешают звук только после первого касания или нажатия.
-   ===================================================================== */
-const YT_ID='AnfPFpDlFBo',YT_LIST='RDAnfPFpDlFBo',MUS_KEY='ghostgrid-music',CITY_KEY='ghostgrid-city',YTDUR_KEY='ghostgrid-ytdur';
-const SPK_ON='M1 3h2v4h-2zM3 2h1v6h-1zM4 1h1v8h-1zM6 3h1v4h-1zM8 2h1v6h-1z',SPK_OFF='M1 3h2v4h-2zM3 2h1v6h-1zM4 1h1v8h-1zM6 3h1v1h-1zM7 4h1v1h-1zM8 5h1v1h-1zM9 6h1v1h-1zM9 3h1v1h-1zM8 4h1v1h-1zM7 5h1v1h-1zM6 6h1v1h-1z';
-const SND={user:false};
-const MUS={on:true,frame:null,ready:false,seeked:false,played:false,vol:-1,cur:0,state:-1,err:'',tries:0};
-const AMB={on:true,ctx:null};
-try{MUS.on=localStorage.getItem(MUS_KEY)!=='off';AMB.on=localStorage.getItem(CITY_KEY)!=='off'}catch(e){}
-
-/* --- музыка: YouTube --- */
-function ytSend(func,args){const f=MUS.frame;if(!f||!f.contentWindow)return;try{f.contentWindow.postMessage(JSON.stringify({event:'command',func,args:args||[],id:'gg',channel:'widget'}),'*')}catch(e){}}
-function ytListen(){const f=MUS.frame;if(!f||!f.contentWindow)return;try{f.contentWindow.postMessage(JSON.stringify({event:'listening',id:'gg',channel:'widget'}),'*')}catch(e){}}
-function ytCreate(){
-  if(MUS.frame||typeof document.createElement!=='function')return;
-  const box=$('ytbox');if(!box||!box.appendChild)return;
-  let dur=0;try{dur=+localStorage.getItem(YTDUR_KEY)||0}catch(e){}
-  /* длина видео известна с прошлого раза — сразу стартуем в случайном месте; иначе перемотаем, когда плеер её сообщит */
-  const st=dur>120?Math.floor(Math.random()*dur*.9):0;MUS.seeked=dur>120;
-  const org=typeof location!=='undefined'&&/^https?:$/.test(location.protocol)?'&origin='+encodeURIComponent(location.origin):'';
-  const f=document.createElement('iframe');
-  f.src='https://www.youtube.com/embed/'+YT_ID+'?enablejsapi=1&autoplay=1&playsinline=1&rel=0&list='+YT_LIST+'&start='+st+org;
-  f.allow='autoplay; encrypted-media; picture-in-picture';f.title='Эфир: Aethereal Dream';
-  if(f.setAttribute){f.setAttribute('frameborder','0');f.setAttribute('allowfullscreen','')}
-  f.addEventListener('load',()=>{MUS.tries=0;ytListen()});
-  box.textContent='';box.appendChild(f);MUS.frame=f;
-  /* рукопожатие с плеером: повторяем, пока он не ответит; не ответил за 8 с — эфир здесь заблокирован */
-  const iv=setInterval(()=>{if(MUS.ready||!MUS.frame){clearInterval(iv);return}ytListen();if(++MUS.tries>16){clearInterval(iv);MUS.err='blocked';soundUI()}},500);
-}
-addEventListener('message',e=>{
-  if(!MUS.frame||e.source!==MUS.frame.contentWindow)return;
-  let d=e.data;if(typeof d==='string'){try{d=JSON.parse(d)}catch(x){return}}
-  if(!d||!d.event)return;
-  if(d.event==='onReady'||d.event==='initialDelivery'){if(!MUS.ready){MUS.ready=true;MUS.err='';MUS.vol=-1;if(!MUS.on)ytSend('pauseVideo');soundUI()}}
-  if(d.event==='onStateChange'&&typeof d.info==='number'){MUS.state=d.info;if(d.info===1)MUS.played=true}
-  if(d.event==='infoDelivery'&&d.info){const i=d.info;
-    if(typeof i.playerState==='number'){MUS.state=i.playerState;if(i.playerState===1)MUS.played=true}
-    const vid=i.videoData&&i.videoData.video_id;
-    if(i.duration>0&&(!vid||vid===YT_ID)){
-      try{localStorage.setItem(YTDUR_KEY,String(Math.floor(i.duration)))}catch(x){}
-      if(!MUS.seeked){MUS.seeked=true;ytSend('seekTo',[Math.floor(Math.random()*i.duration*.9),true])}}
-    if(!MUS.ready){MUS.ready=true;MUS.err='';soundUI()}
-  }
-});
-function musicGo(){
-  if(!MUS.on||document.hidden)return;
-  if(!MUS.frame){ytCreate();return}
-  if(MUS.ready&&!MUS.played)ytSend('playVideo');          /* браузер мог не дать автозапуск — пробуем на жесте */
-}
-function toggleMusic(){
-  MUS.on=!MUS.on;try{localStorage.setItem(MUS_KEY,MUS.on?'on':'off')}catch(e){}
-  SND.user=true;
-  if(MUS.on){if(MUS.frame){ytSend('playVideo');MUS.played=false}else ytCreate()}else ytSend('pauseVideo');
-  soundUI();
-}
-function musicTick(){
-  if(!MUS.ready||!MUS.on)return;
-  const tg=state==='pause'?18:state==='over'?28:60;
-  MUS.cur+=(tg-MUS.cur)*.08;const v=Math.round(MUS.cur);
-  if(v!==MUS.vol){MUS.vol=v;ytSend('setVolume',[v])}
-}
-
-/* --- город: Web Audio --- */
-function noiseBuf(ctx,sec,brown){
-  const n=Math.floor(ctx.sampleRate*sec),b=ctx.createBuffer(2,n,ctx.sampleRate);
-  for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);let l=0;
-    for(let i=0;i<n;i++){const w=Math.random()*2-1;if(brown){l=(l+.02*w)/1.02;d[i]=l*3.5}else d[i]=w}}
-  return b;
-}
-function ambInit(){
-  if(AMB.ctx)return true;
-  const AC=typeof AudioContext!=='undefined'?AudioContext:(typeof webkitAudioContext!=='undefined'?webkitAudioContext:null);
-  if(!AC)return false;
-  let ctx;try{ctx=new AC()}catch(e){return false}
-  AMB.ctx=ctx;
-  const W2=noiseBuf(ctx,2.3,false),BR=noiseBuf(ctx,3.7,true);
-  const src=(buf,rate)=>{const s=ctx.createBufferSource();s.buffer=buf;s.loop=true;if(rate)s.playbackRate.value=rate;s.start(0,Math.random()*buf.duration);return s};
-  const flt=(type,f,q)=>{const x=ctx.createBiquadFilter();x.type=type;x.frequency.value=f;if(q!=null)x.Q.value=q;return x};
-  const gain=v=>{const g=ctx.createGain();g.gain.value=v;return g};
-  const pan=()=>ctx.createStereoPanner?ctx.createStereoPanner():null;
-  const chain=(...n)=>{n=n.filter(Boolean);for(let i=0;i<n.length-1;i++)n[i].connect(n[i+1]);return n[n.length-1]};
-  /* общая шина: громкость и «приглушение» фильтром на паузе */
-  AMB.mute=flt('lowpass',18000,.5);AMB.master=gain(0);chain(AMB.mute,AMB.master,ctx.destination);
-  const bus=AMB.mute;
-  /* дождь: шипение и редкие капли */
-  AMB.rain=gain(0);chain(src(W2),flt('highpass',1100,.4),flt('lowpass',7000,.3),AMB.rain,bus);
-  AMB.drops=gain(0);chain(src(W2,.7),flt('bandpass',2600,6),AMB.drops,bus);
-  /* гул большого города */
-  AMB.hum=gain(.22);chain(src(BR),flt('lowpass',160,.7),AMB.hum,bus);
-  AMB.far=gain(.05);chain(src(W2,.5),flt('bandpass',450,.6),AMB.far,bus);
-  /* четыре полосы: шипение шин по мокрому асфальту и низкий рокот, панорама за машинами */
-  AMB.lanes=[0,1,2,3].map(i=>{
-    const g=gain(0),p=pan(),r=gain(0);
-    chain(src(W2,.8+i*.07),flt('bandpass',1400+i*250,.8),g,p,bus);
-    chain(src(BR,.9+i*.05),flt('lowpass',140,.9),r,p||bus);
-    return{g,r,p};
-  });
-  /* сирена: «вой» за счёт медленной модуляции частоты */
-  const so=ctx.createOscillator();so.type='triangle';so.frequency.value=900;
-  const lfo=ctx.createOscillator();lfo.frequency.value=.32;const lg=gain(330);lfo.connect(lg);lg.connect(so.frequency);
-  AMB.siren=gain(0);AMB.sirP=pan();chain(so,flt('lowpass',2200,.7),AMB.siren,AMB.sirP,bus);so.start();lfo.start();
-  /* гул неона и трансформаторов: 100 Гц с обертонами */
-  const no=ctx.createOscillator();no.type='sawtooth';no.frequency.value=100;AMB.neonO=no;
-  AMB.neon=gain(0);chain(no,flt('lowpass',420,1.2),AMB.neon,bus);no.start();
-  /* треск огня */
-  AMB.fire=gain(0);chain(src(W2,1.3),flt('bandpass',3200,1.4),AMB.fire,bus);
-  AMB.t=0;AMB.next={horn:2+Math.random()*4,drop:0,crack:0};AMB.dead=false;
-  return true;
-}
-function oneShot(fn){if(!AMB.ctx||!AMB.on||AMB.ctx.state!=='running')return;try{fn(AMB.ctx,AMB.mute)}catch(e){}}
-function sfxHorn(x){oneShot((ctx,bus)=>{
-  const t=ctx.currentTime,len=.18+Math.random()*.35,g=ctx.createGain(),f=ctx.createBiquadFilter(),p=ctx.createStereoPanner?ctx.createStereoPanner():null;
-  f.type='lowpass';f.frequency.value=1600;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.035,t+.02);g.gain.setValueAtTime(.035,t+len);g.gain.linearRampToValueAtTime(0,t+len+.06);
-  if(p){p.pan.value=Math.max(-1,Math.min(1,x));f.connect(g);g.connect(p);p.connect(bus)}else{f.connect(g);g.connect(bus)}
-  const base=300+Math.random()*120;[1,1.26].forEach(k=>{const o=ctx.createOscillator();o.type='square';o.frequency.value=base*k;o.connect(f);o.start(t);o.stop(t+len+.1)});
-  if(Math.random()<.3){const t2=t+len+.12;[1,1.26].forEach(k=>{const o=ctx.createOscillator();o.type='square';o.frequency.value=base*k;const g2=ctx.createGain();g2.gain.setValueAtTime(0,t2);g2.gain.linearRampToValueAtTime(.03,t2+.02);g2.gain.linearRampToValueAtTime(0,t2+.2);o.connect(g2);g2.connect(f);o.start(t2);o.stop(t2+.25)})}
-})}
-function sfxBoom(x,big){oneShot((ctx,bus)=>{
-  const t=ctx.currentTime,o=ctx.createOscillator(),g=ctx.createGain(),p=ctx.createStereoPanner?ctx.createStereoPanner():null;
-  o.type='sine';o.frequency.setValueAtTime(big?70:90,t);o.frequency.exponentialRampToValueAtTime(28,t+1.2);
-  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(big?.5:.25,t+.03);g.gain.exponentialRampToValueAtTime(.001,t+(big?2.2:1.4));
-  if(p){p.pan.value=Math.max(-1,Math.min(1,x));o.connect(g);g.connect(p);p.connect(bus)}else{o.connect(g);g.connect(bus)}o.start(t);o.stop(t+2.4);
-  const n=ctx.createBufferSource(),nb=ctx.createBuffer(1,Math.floor(ctx.sampleRate*1.2),ctx.sampleRate),d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);
-  n.buffer=nb;const nf=ctx.createBiquadFilter();nf.type='lowpass';nf.frequency.value=big?600:900;const ng=ctx.createGain();ng.gain.value=big?.35:.18;n.connect(nf);nf.connect(ng);ng.connect(p||bus);n.start(t);
-})}
-function sfxDrop(){oneShot((ctx,bus)=>{
-  const t=ctx.currentTime,o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.setValueAtTime(1800+Math.random()*2400,t);o.frequency.exponentialRampToValueAtTime(600,t+.05);
-  g.gain.setValueAtTime(.012+Math.random()*.012,t);g.gain.exponentialRampToValueAtTime(.0005,t+.07);o.connect(g);g.connect(bus);o.start(t);o.stop(t+.08)})}
-function sfxPowerDown(){oneShot((ctx,bus)=>{
-  const t=ctx.currentTime,o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();f.type='lowpass';f.frequency.value=500;
-  o.type='sawtooth';o.frequency.setValueAtTime(120,t);o.frequency.exponentialRampToValueAtTime(18,t+2.2);
-  g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+2.4);o.connect(f);f.connect(g);g.connect(bus);o.start(t);o.stop(t+2.5)})}
-function set(p,v,tc){if(p&&p.setTargetAtTime)p.setTargetAtTime(v,AMB.ctx.currentTime,tc||.12)}
-let ambAcc=0;
-function ambTick(dt){
-  if(!AMB.ctx||AMB.ctx.state!=='running')return;
-  ambAcc+=dt;if(ambAcc<50)return;const s=ambAcc/1000;ambAcc=0;AMB.t+=s;
-  const w=C.w||1,H_=C.heat||0,on=AMB.on?1:0;
-  /* общая громкость; на паузе город глуше, при проигрыше тише */
-  set(AMB.master.gain,on*(state==='over'?.5:state==='pause'?.45:.8),.25);
-  set(AMB.mute.frequency,state==='pause'?650:state==='menu'?5000:18000,.3);
-  if(!on)return;
-  const rainK=.55+.45*H_;set(AMB.rain.gain,.05*rainK,.5);set(AMB.drops.gain,.02*rainK,.5);
-  AMB.next.drop-=s;if(AMB.next.drop<=0){AMB.next.drop=.05+Math.random()*.4/rainK;sfxDrop()}
-  /* машины: каждая полоса звучит от машин, что ближе к центру экрана (там «слушатель») */
-  const L=[0,0,0,0],R=[0,0,0,0],P=[0,0,0,0],depth=[.55,.42,.3,.2];
-  for(const c of C.cars||[]){const cx=(c.x+c.w/2-w/2)/(w*.5),d=Math.hypot(cx*.9,depth[c.lane]),lv=Math.min(1.4,(c.v/40)*(1/(1+(d/.35)*(d/.35))));
-    const big=c.type==='bus'||c.type==='truck';L[c.lane]+=lv*(c.type==='bike'?.6:1);R[c.lane]+=lv*(big?1.8:.6);P[c.lane]+=lv*Math.max(-1,Math.min(1,cx))}
-  AMB.lanes.forEach((ln,i)=>{const tot=L[i]+R[i]*.01;set(ln.g.gain,Math.min(.16,L[i]*.07),.1);set(ln.r.gain,Math.min(.35,R[i]*.12),.15);if(ln.p&&tot>.001)set(ln.p.pan,Math.max(-.9,Math.min(.9,P[i]/Math.max(.001,L[i]))),.1)});
-  /* сирены: полиция на дороге и в воздухе */
-  let sv=0,sp=0;for(const c of C.cars||[])if(c.pol){const cx=(c.x+c.w/2-w/2)/(w*.5);const k=1/(1+cx*cx*2);sv+=k;sp+=k*cx}
-  for(const q of C.spinners||[]){const cx=(q.x-w/2)/(w*.5);const k=.6/(1+cx*cx*2);sv+=k;sp+=k*cx}
-  set(AMB.siren.gain,Math.min(.06,sv*.03)*(C.dead?.3:1),.4);if(AMB.sirP&&sv>.01)set(AMB.sirP.pan,Math.max(-.8,Math.min(.8,sp/sv)),.3);
-  /* неон гудит, пока есть ток; при перебоях трещит, при проигрыше гаснет */
-  const pw=C.lampP==null?1:C.lampP;set(AMB.neon.gain,.012*pw*(1+H_*.6)*(C.screensOn==null?1:C.screensOn),.08);
-  if(C.dead&&!AMB.dead){AMB.dead=true;sfxPowerDown()}else if(!C.dead&&AMB.dead)AMB.dead=false;
-  set(AMB.fire.gain,.07*(C.fireGlow||0)*(.6+.4*Math.random()),.05);
-  set(AMB.hum.gain,(.18+.08*H_)*(C.dead?.5:1),.6);
-  /* гудки: чаще, когда в городе неспокойно */
-  AMB.next.horn-=s;if(AMB.next.horn<=0){AMB.next.horn=(3+Math.random()*9)/(1+H_*4);const cs=C.cars||[];if(cs.length){const c=cs[Math.floor(Math.random()*cs.length)];sfxHorn((c.x-w/2)/(w*.5))}}
-}
-function toggleCity(){
-  AMB.on=!AMB.on;try{localStorage.setItem(CITY_KEY,AMB.on?'on':'off')}catch(e){}
-  SND.user=true;if(AMB.on)cityGo();else if(AMB.ctx)set(AMB.master.gain,0,.05);
-  soundUI();
-}
-function cityGo(){if(!AMB.on||document.hidden)return;if(!ambInit())return;if(AMB.ctx.state==='suspended'){const p=AMB.ctx.resume();if(p&&p.catch)p.catch(()=>{})}}
-/* на iPhone звук страницы глушится переключателем «без звука», если не играет обычный аудиоэлемент: включаем тишину */
-let iosUnlock=null;
-function iosSilence(){
-  if(iosUnlock||typeof Audio==='undefined'||typeof navigator==='undefined')return;
-  const ios=/iP(hone|ad|od)/.test(navigator.userAgent||'')||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);if(!ios)return;
-  const n=800,buf=new ArrayBuffer(44+n),v=new DataView(buf),w=(o,str)=>{for(let i=0;i<str.length;i++)v.setUint8(o+i,str.charCodeAt(i))};
-  w(0,'RIFF');v.setUint32(4,36+n,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,8000,true);v.setUint32(28,8000,true);v.setUint16(32,1,true);v.setUint16(34,8,true);w(36,'data');v.setUint32(40,n,true);
-  for(let i=0;i<n;i++)v.setUint8(44+i,128);
-  iosUnlock=new Audio(URL.createObjectURL(new Blob([buf],{type:'audio/wav'})));iosUnlock.loop=true;const p=iosUnlock.play();if(p&&p.catch)p.catch(()=>{iosUnlock=null});
-}
-function soundGesture(){SND.user=true;iosSilence();musicGo();cityGo()}
-function soundTick(dt){musicTick();ambTick(dt)}
-function soundUI(){
-  const mi=MUS.on?SPK_ON:SPK_OFF;
-  document.querySelectorAll('#mSnd svg.ic path,#pSnd svg.ic path').forEach(p=>p.setAttribute('d',mi));
-  const anyOn=MUS.on||AMB.on;document.querySelectorAll('.pad [data-a="snd"] svg.ic path').forEach(p=>p.setAttribute('d',anyOn?SPK_ON:SPK_OFF));
-  const tog=(id,on)=>{const m=$(id);if(!m||!m.classList)return;if(on)m.classList.add('on');else m.classList.remove('on');if(m.setAttribute)m.setAttribute('aria-pressed',on?'true':'false')};
-  tog('mSnd',MUS.on);tog('mCity',AMB.on);
-  const blocked=MUS.err==='blocked';
-  setPx($('mSndL'),blocked?'Нет эфира':'Музыка');setPx($('pSndL'),blocked?'Нет эфира':MUS.on?'Музыка вкл':'Музыка выкл');
-  setPx($('mCityL'),'Город');setPx($('pCityL'),AMB.on?'Город вкл':'Город выкл');
-  const sub=$('ytsub');if(sub)sub.textContent=blocked?'эфир здесь заблокирован':'Aethereal Dream · YouTube';
-  const yt=$('yt'),bd=document.body,hid=!MUS.on&&!MUS.frame;if(yt&&yt.classList){if(hid)yt.classList.add('hide');else yt.classList.remove('hide')}
-  if(bd&&bd.classList){if(hid)bd.classList.remove('hasyt');else bd.classList.add('hasyt')}
-}
-['pointerdown','pointerup','touchend','click'].forEach(t=>document.addEventListener(t,soundGesture,{capture:true,passive:true}));
-document.addEventListener('keydown',e=>{if(e.code!=='KeyS'&&e.code!=='KeyG')soundGesture()},true);
-document.addEventListener('visibilitychange',()=>{
-  if(document.hidden){if(MUS.frame&&MUS.on)ytSend('pauseVideo');if(AMB.ctx&&AMB.ctx.suspend)AMB.ctx.suspend()}
-  else if(SND.user){if(MUS.frame&&MUS.on)ytSend('playVideo');cityGo()}
-});
-$('mSnd').addEventListener('click',e=>{e.stopPropagation();toggleMusic();blurActive()});
-$('mCity').addEventListener('click',e=>{e.stopPropagation();toggleCity();blurActive()});
-$('pSnd').addEventListener('click',()=>{toggleMusic();blurActive()});
-$('pCity').addEventListener('click',()=>{toggleCity();blurActive()});
-P('snd').addEventListener('pointerdown',e=>{e.preventDefault();
-  const on=!(MUS.on||AMB.on);if(MUS.on!==on)toggleMusic();if(AMB.on!==on)toggleCity()});
-
 board=Array.from({length:H},()=>Array(W).fill(0));
 document.querySelectorAll('[data-px]').forEach(el=>setPx(el,el.dataset.px));
-ui();showMenu(true);soundUI();
+ui();showMenu(true);
 requestAnimationFrame(frame);
 </script>
 </body>
