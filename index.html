@@ -1682,12 +1682,21 @@ function swMove(e){
   sw.hist.push({t:n,y:e.clientY});if(sw.hist.length>8)sw.hist.shift();
   if(!sw.moved&&Math.hypot(e.clientX-sw.x0,e.clientY-sw.y0)>12)sw.moved=true;
   if(!sw.moved||state!=='run'||lockHold||!cur){sw.ax=e.clientX;sw.ay=e.clientY;return}
-  while(e.clientX-sw.ax>=sx){move(1);sw.ax+=sx}
-  while(sw.ax-e.clientX>=sx){move(-1);sw.ax-=sx}
-  if(e.clientY<sw.ay)sw.ay=e.clientY;
-  while(e.clientY-sw.ay>=sy){
-    sw.ay+=sy;
-    if(!drop()){sw.ay=e.clientY;break}
+  /* ось жеста: пока палец идёт вниз, боковые дрожания игнорируются; сменить ось можно только явным движением (>2 клеток) */
+  if(!sw.axis){const dx=Math.abs(e.clientX-sw.x0),dy=e.clientY-sw.y0;sw.axis=(dy>0&&dy>=dx*.6)?'v':'h';sw.bx=e.clientX;sw.by=e.clientY}
+  if(sw.axis==='v'&&Math.abs(e.clientX-sw.bx)>cp*2){sw.axis='h';sw.ax=e.clientX;sw.by=e.clientY}
+  else if(sw.axis==='h'&&e.clientY-sw.by>cp*2&&e.clientY-sw.by>Math.abs(e.clientX-sw.bx)*1.5){sw.axis='v';sw.ay=e.clientY;sw.bx=e.clientX;sw.ax=e.clientX}
+  if(sw.axis==='v')sw.ax=e.clientX;else if(e.clientY<sw.by)sw.by=e.clientY;
+  if(sw.axis==='h'){
+    while(e.clientX-sw.ax>=sx){move(1);sw.ax+=sx}
+    while(sw.ax-e.clientX>=sx){move(-1);sw.ax-=sx}
+    sw.ay=e.clientY;
+  }else{
+    if(e.clientY<sw.ay)sw.ay=e.clientY;
+    while(e.clientY-sw.ay>=sy){
+      sw.ay+=sy;
+      if(!drop()){sw.ay=e.clientY;break}
+    }
   }
 }
 function swUp(e){
