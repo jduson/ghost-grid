@@ -45,7 +45,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:3;back
 .help em{font-style:normal;color:var(--red)}
 .pad{display:none;gap:6px}
 .pad button{width:48px;height:48px;border:1px solid var(--teal);background:rgba(79,240,216,.07);color:var(--teal);font-size:20px;font-family:var(--font);text-shadow:0 0 8px var(--teal);box-shadow:0 0 10px rgba(79,240,216,.2);touch-action:none;clip-path:polygon(0 0,calc(100% - 9px) 0,100% 9px,100% 100%,9px 100%,0 calc(100% - 9px))}
-.pad button.on{background:rgba(255,110,199,.35);border-color:var(--pink)}
+.pad button:active{background:rgba(255,110,199,.35);border-color:var(--pink)}
 .pad button:disabled{opacity:.3}
 @media (hover:none){
  .wrap{flex-direction:column;align-items:center;gap:8px}
@@ -84,10 +84,6 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:3;back
   </div>
   <div class="pad">
     <button id="undo" data-a="undo" aria-label="Ход назад" disabled>↶</button>
-    <button data-a="l" aria-label="Влево">◀</button>
-    <button data-a="rot" aria-label="Поворот">⟳</button>
-    <button data-a="r" aria-label="Вправо">▶</button>
-    <button data-a="down" aria-label="Быстро вниз (зажать)">▼</button>
     <button data-a="pause" aria-label="Пауза">❚❚</button>
   </div>
 </div>
@@ -508,21 +504,8 @@ addEventListener('blur',()=>{fastKeys.clear();btnFast=false;spaceHeld=false});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='run')state='pause'});
 
 /* --- сенсорные кнопки --- */
-const act=f=>()=>{if(state==='ready'||state==='over')start();else if(state==='pause')state='run';else f()};
-function hold(btn,fn,delay=170,rep=70){
-  let t,i;
-  const stop=()=>{clearTimeout(t);clearInterval(i);btn.classList.remove('on')};
-  btn.addEventListener('pointerdown',e=>{e.preventDefault();btn.classList.add('on');fn();t=setTimeout(()=>{i=setInterval(fn,rep)},delay)});
-  ['pointerup','pointercancel','pointerleave'].forEach(ev=>btn.addEventListener(ev,stop));
-}
 const P=a=>document.querySelector('.pad [data-a="'+a+'"]');
-hold(P('l'),act(()=>move(-1)));
-hold(P('r'),act(()=>move(1)));
-P('rot').addEventListener('pointerdown',e=>{e.preventDefault();act(tryRotate)()});
 P('undo').addEventListener('pointerdown',e=>{e.preventDefault();undo()});
-const dn=P('down');
-dn.addEventListener('pointerdown',e=>{e.preventDefault();dn.classList.add('on');if(state==='run'){btnFast=true;fastStart=performance.now();drop();acc=0}else act(()=>{})()});
-['pointerup','pointercancel','pointerleave'].forEach(ev=>dn.addEventListener(ev,()=>{btnFast=false;dn.classList.remove('on')}));
 P('pause').addEventListener('pointerdown',e=>{e.preventDefault();if(state==='run')state='pause';else if(state==='pause')state='run';else start()});
 cv.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')return;if(state==='ready'||state==='over')start();else if(state==='pause')state='run'});
 
