@@ -295,7 +295,7 @@ const PAL={
   fire:['#fff2a8','#ffc24a','#ff7a2a','#c8361c','#6e1a14'],
   smoke:['#182124','#202a2e','#29343a']
 };
-const RGB={};const rgb=h=>RGB[h]||(RGB[h]=[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]);
+const RGB={};const rgb=h=>RGB[h]||(RGB[h]=h[0]==='r'?h.slice(4,-1).split(',').map(Number):[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]);
 const mix=(a,c,k)=>{const A=rgb(a),Bc=rgb(c);return 'rgb('+Math.round(A[0]+(Bc[0]-A[0])*k)+','+Math.round(A[1]+(Bc[1]-A[1])*k)+','+Math.round(A[2]+(Bc[2]-A[2])*k)+')'};
 const sstep=(a,c,v)=>{const k=Math.max(0,Math.min(1,(v-a)/(c-a)));return k*k*(3-2*k)};
 const off=c=>mix('#05090a',c,.2);
@@ -314,7 +314,7 @@ function cjk(ch,size){
 function drawCJK(g,ch,size,x,y,col){const rows=cjk(ch,size);if(!rows)return;g.fillStyle=col;rows.forEach((r,yy)=>{for(let xx=0;xx<r.length;xx++)if(r[xx]==='1')g.fillRect(x+xx-1,y+yy-1,1,1)})}
 
 const C={P:3,w:0,h:0,hor:0,t:0,heat:0,danger:0,flash:0,fireGlow:0,lampP:1,screensOn:1,dead:false,
-  rects:[],signs:[],beacons:[],fires:[],people:[],cars:[],rain:[],smoke:[],sparks:[],spinners:[],air:[],lamps:[],
+  rects:[],signs:[],beacons:[],fires:[],cars:[],rain:[],smoke:[],sparks:[],spinners:[],air:[],lamps:[],
   koi:null,blimp:null,eye:null,tick:null,volt:null,fall:null,msgQ:[],virus:0,topRatio:0,acc:0};
 
 function imgFill(g,w,h,fn){
@@ -340,17 +340,49 @@ function farTower(g,r,x,tw,top,hor){
   g.fillStyle=PAL.far;g.fillRect(x,top,tw,hor-top);g.fillStyle=PAL.farSide;g.fillRect(x+tw-2,top,2,hor-top);
   for(let yy=Math.max(1,top+2);yy<hor-2;yy+=2)for(let xx=x+1;xx<x+tw-3;xx+=2)if(r()<.11){g.fillStyle=PAL.farWin[Math.floor(r()*4)];g.fillRect(xx,yy,1,1)}
 }
-function empireState(g,cx,hor,H0){
-  /* силуэт по ступеням: подиум, уступы, ствол с вертикальными простенками, ар-деко корона, мачта, шпиль */
-  const u=H0/150,R=(w,y0,y1)=>{g.fillRect(Math.round(cx-w/2),Math.round(hor-y1*u),Math.round(w),Math.max(1,Math.round((y1-y0)*u)))};
-  g.fillStyle='#142a30';
-  R(36*u,0,8);R(30*u,8,16);R(26*u,16,22);R(22*u,22,100);R(18*u,100,106);R(14*u,106,111);R(10*u,111,117);R(8*u,117,121);R(6*u,121,124);R(4*u,124,134);R(2*u,134,140);R(1,140,156);
-  for(let y=Math.round(hor-124*u);y<hor-22*u;y++){const k=1-(hor-y-22*u)/(102*u),hw=y<hor-100*u?Math.round((y<hor-117*u?4:y<hor-111*u?7:y<hor-106*u?9:11)*u):Math.round(11*u);
-    for(let x=Math.round(cx-hw);x<cx+hw;x++)if(dith(x,y,.18+.5*(1-k)*(y<hor-95*u?1.4:1))){g.fillStyle=(x-cx+40)%2?'#c8a868':'#8a7448';g.fillRect(x,y,1,1)}}
-  g.fillStyle='#2a3a3e';for(let x=Math.round(cx-11*u)+1;x<cx+11*u-1;x+=2)g.fillRect(x,Math.round(hor-90*u),1,Math.round(66*u));
-  g.fillStyle='#0b181c';g.fillRect(Math.round(cx+11*u)-2,Math.round(hor-100*u),2,Math.round(78*u));
-  const r=srnd(1931);for(let y=Math.round(hor-98*u);y<hor-24*u;y+=2)for(let x=Math.round(cx-10*u);x<cx+9*u;x+=2)if(r()<.16){g.fillStyle=r()<.7?'#7a6a40':'#4a7a74';g.fillRect(x,y,1,1)}
-  return {x:cx,top:Math.round(hor-121*u),u};
+/* Эмпайр-стейт-билдинг по настоящим пропорциям (метры от земли, ширина фасада в метрах):
+   подиум 5 этажей, уступы 6-го, 21-го, 25-го и 30-го этажей, ствол с выступающей центральной частью,
+   крылья до 72-го этажа, смотровая площадка 86-го, мачта для дирижаблей с рёбрами, антенна.
+   Фасад — непрерывные светлые простенки и тёмные полосы окон, как у оригинала. */
+const ESBC={ledge:'#5d727c',edge:'#4c616b',pier:'#364952',span:'#121a1f',glass:'#0d1519',lit:'#e8c48a',lit2:'#9fc8d0',
+  mast0:'#55707a',mast1:'#3c525b',mast2:'#26353c',fin:'#6c8590',ant:'#2a383e'};
+function esbPaint(g,cx,hor,T,col){
+  const k=T/443,Y=m=>Math.round(hor-m*k),r=srnd(1931);
+  const put=(x,y,t,sh)=>{const c=col(t,x,y,sh);if(c){g.fillStyle=c;g.fillRect(x,y,1,1)}};
+  const block=(m0,m1,wm,bay)=>{
+    const hw=Math.max(1,Math.round(wm*k/2)),x0=Math.round(cx)-hw,x1=Math.round(cx)+hw,y0=Y(m1),y1=Y(m0),sw=Math.max(1,Math.round(hw*.62));
+    for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
+      const sh=x>=x1-sw?1:0;let t;
+      if(y===y0)t='ledge';else if(x===x0)t='edge';
+      else if((x-x0)%2===0)t='pier';
+      else if((y-y0)%2===0)t='span';
+      else{const q=r();t=q<.07?'lit':q<.085?'lit2':'glass'}
+      put(x,y,t,sh)}
+    if(bay)for(let y=y0;y<y1;y++)put(x0-1,y,'span',1);             /* тень от выступа на крылья */
+  };
+  block(0,25,130);block(25,80,104);block(80,100,92);block(100,120,80);
+  block(120,275,64);block(275,300,52);block(120,320,40,1);block(320,326,34);
+  /* мачта: рёбра у основания, цилиндр с вертикальными гранями, сужение */
+  const cyl=(m0,m1,w0,w1,fins)=>{for(let y=Y(m1);y<Y(m0);y++){const f=(Y(m0)-y)/Math.max(1,Y(m0)-Y(m1)),hw=Math.max(.5,(w0+(w1-w0)*f)*k/2),x0=Math.round(cx-hw),x1=Math.round(cx+hw);
+    for(let x=x0;x<x1;x++){const u=(x-x0+.5)/(x1-x0),t=fins&&(x-x0)%2===1?'fin':u<.3?'mast0':u<.65?'mast1':'mast2';put(x,y,t,u>.65?1:0)}}};
+  cyl(326,334,30,24,1);cyl(334,372,20,16,1);cyl(372,381,14,10,0);cyl(381,392,7,5,0);
+  for(let y=Y(443);y<Y(392);y++)put(Math.round(cx),y,'ant',0);
+  return {x:Math.round(cx),k,Y,top:Y(443)};
+}
+function bakeEsb(g,cx,hor,T){
+  const base=(t,x,y,sh)=>sh&&t!=='lit'&&t!=='lit2'?mix(ESBC[t],'#000000',.38):ESBC[t];
+  const E=esbPaint(g,cx,hor,T,base);
+  /* подсветка верхушки: два варианта (обычный белый с бирюзой и красный «тревога»), рисуются поверх с прозрачностью */
+  const k=E.k,hw=Math.ceil(66*k/2)+2,x0=E.x-hw,y0=E.top-1,y1=E.Y(250),wd=hw*2,ht=y1-y0+1;
+  const crown=(L1,L2)=>{const c=layer(wd,ht),cg=c.getContext('2d');if(!cg||!cg.fillRect)return c;cg.translate(-x0,-y0);
+    esbPaint(cg,cx,hor,T,(t,x,y,sh)=>{const m=(hor-y)/k;if(m<250||t==='ant')return null;
+      const f=Math.min(1,(m-250)/75),dk=t==='span'||t==='glass'||t==='lit'||t==='lit2',ms=t.startsWith('mast')||t==='fin';
+      if(m<300&&!dk&&!ms&&!dith(x,y,f*1.4))return null;
+      const tg=ms?(t==='fin'?L2:t==='mast2'?mix(L1,'#000000',.45):L1):dk?mix(L1,'#000000',.7):L1;
+      const k2=(ms?.85:dk?.12:.78)*(dith(x,y,f)?1:.65);return mix(base(t,x,y,sh),sh&&!ms?mix(tg,'#000000',.45):tg,k2*Math.min(1,.25+f))});
+    return c};
+  E.cw={x:x0,y:y0,a:crown('#f2ead6','#4ff0d0'),b:crown('#ff4a4a','#ffb347')};
+  return E;
 }
 function bakeFar(r){
   const w=C.w,h=C.h,hor=C.hor,L=layer(w,hor),g=L.getContext('2d');
@@ -360,7 +392,7 @@ function bakeFar(r){
   /* мегабашни: крыши не видно, они уходят выше кадра */
   for(const fx of [.07,.5,.66]){const tw=Math.round(18+r()*14),x=Math.round(w*fx-tw/2);farTower(g,r,x,tw,0,hor);
     g.fillStyle='#1f3e48';g.fillRect(x+2,0,1,hor);g.fillStyle='#3a1a24';for(let y=8+Math.round(r()*10);y<hor;y+=26)g.fillRect(x,y,tw,1)}
-  C.esb=empireState(g,Math.round(w*.9),hor,Math.min(h*.58,190));
+  C.esb=bakeEsb(g,Math.round(w*.9),hor,hor-3);
   for(let y=Math.round(hor*.3);y<hor;y++){const k=(y-hor*.3)/(hor*.7);g.fillStyle=k>.6?'#3a2a48':'#24303e';for(let x=0;x<w;x++)if(dith(x,y,k*.4))g.fillRect(x,y,1,1)}
   C.far=L;
 }
@@ -368,12 +400,21 @@ function bakeFar(r){
 function midTower(gL,gD,r,t){
   const {x,w:tw,top}=t,hor=C.hor,side=Math.max(2,Math.round(tw*.22));
   for(const g of [gL,gD]){g.fillStyle=PAL.mid;g.fillRect(x,top,tw,hor-top);g.fillStyle=PAL.midSide;g.fillRect(x+tw-side,top,side,hor-top);g.fillStyle=PAL.midEdge;g.fillRect(x,top,1,hor-top);g.fillRect(x,top,tw,1)}
-  const roof=[];
-  if(r()<.45){const bx=x+2+Math.round(r()*(tw-9));roof.push(g=>{g.fillStyle=PAL.mid;g.fillRect(bx,top-5,5,4);g.fillRect(bx,top-1,1,1);g.fillRect(bx+4,top-1,1,1);g.fillStyle=PAL.midEdge;g.fillRect(bx,top-5,5,1)})}
+  const roof=[],vq=r();
+  if(vq<.3&&tw>16){                                                         /* уступы наверху, как у башен 30-х годов */
+    const w1=Math.round(tw*.7),w2=Math.round(tw*.4),x1=x+Math.round((tw-w1)/2),x2=x+Math.round((tw-w2)/2),h1=4+Math.round(r()*3),h2=3+Math.round(r()*3);
+    roof.push(g=>{g.fillStyle=PAL.mid;g.fillRect(x1,top-h1,w1,h1);g.fillRect(x2,top-h1-h2,w2,h2);g.fillStyle=PAL.midEdge;g.fillRect(x1,top-h1,w1,1);g.fillRect(x2,top-h1-h2,w2,1);
+      g.fillStyle=PAL.midSide;g.fillRect(x1+w1-2,top-h1,2,h1);g.fillRect(x2+w2-1,top-h1-h2,1,h2)});
+    for(let xx=x1+2;xx<x1+w1-3;xx+=3)if(r()<.5){gL.fillStyle=PAL.win[0];gL.fillRect(xx,top-h1+2,1,1)}
+    if(r()<.6){const ah=4+Math.round(r()*8),ax=x2+Math.floor(w2/2);roof.push(g=>{g.fillStyle=PAL.midEdge;g.fillRect(ax,top-h1-h2-ah,1,ah)});C.beacons.push({x:ax,y:top-h1-h2-ah-1,p:r()*6.3})}}
+  else if(vq<.5){const nc=[PAL.neon.pink,PAL.neon.teal,PAL.neon.amber][Math.floor(r()*3)];    /* светящийся контур крыши и полоса по ребру */
+    gL.fillStyle=nc;gL.fillRect(x,top,tw,1);gL.fillRect(x,top,1,Math.round((hor-top)*.35));gD.fillStyle=mix(nc,'#000000',.8);gD.fillRect(x,top,tw,1)}
+  if(vq>=.3&&r()<.45){const bx=x+2+Math.round(r()*(tw-9));roof.push(g=>{g.fillStyle=PAL.mid;g.fillRect(bx,top-5,5,4);g.fillRect(bx,top-1,1,1);g.fillRect(bx+4,top-1,1,1);g.fillStyle=PAL.midEdge;g.fillRect(bx,top-5,5,1)})}
   if(r()<.5){const ah=5+Math.round(r()*10),ax=x+Math.round(tw*(.25+r()*.5));roof.push(g=>{g.fillStyle=PAL.midEdge;g.fillRect(ax,top-ah,1,ah)});C.beacons.push({x:ax,y:top-ah-1,p:r()*6.3})}
   roof.forEach(f=>{f(gL);f(gD)});
   const q=r(),main=q<.68?PAL.win[0]:q<.92?PAL.win[3]:PAL.win[5],alt=q<.68?PAL.win[2]:PAL.win[4];
   for(let yy=top+3;yy<hor-3;yy+=3){const fl=r(),lit=fl<.25?.55:fl<.55?.08:.22;
+    if((yy-top)%36===30){for(const g of [gL,gD]){g.fillStyle='#0a1416';g.fillRect(x+1,yy,tw-side-1,2);g.fillStyle=PAL.midEdge;g.fillRect(x+1,yy+2,tw-side-1,1)}continue}
     for(let xx=x+2;xx<x+tw-side-2;xx+=3){const on=r()<lit;gD.fillStyle=PAL.winOff;gD.fillRect(xx,yy,2,2);gL.fillStyle=on?(r()<.82?main:alt):PAL.winOff;gL.fillRect(xx,yy,2,2);
       if(on&&t.fc&&(xx<C.w*.3||xx>C.w*.7))t.fc.push({x:xx,y:yy})}}
 }
@@ -403,46 +444,86 @@ function megaBlock(gL,gD,r,x,tw,top){
   return {x,w:tw,top};
 }
 function frontBuilding(gL,gD,r,t){
-  /* дом на улице: этаж 10 пикселей, витрина на первом этаже, пожарная лестница, кондиционеры */
-  const {x,w:tw,top}=t,hor=C.hor,col=PAL.facades[Math.floor(r()*PAL.facades.length)],side=3;
-  for(const g of [gL,gD]){g.fillStyle=col;g.fillRect(x,top,tw,hor-top);g.fillStyle='#060a0b';g.fillRect(x+tw-side,top,side,hor-top);g.fillStyle=mix(col,'#5a7a80',.18);g.fillRect(x,top,1,hor-top);g.fillRect(x,top,tw,2);
-    g.fillStyle='#070b0c';g.fillRect(x,hor-15,tw,1)}
-  const fl=10,q=r(),main=q<.7?PAL.win[0]:q<.9?PAL.win[3]:PAL.win[5];
-  for(let yy=top+5;yy<hor-22;yy+=fl){
+  /* дом у дороги: этаж 10 пикселей, карниз, межэтажные пояса, кондиционеры, пожарная лестница,
+     на крыше бак для воды, вентиляция, антенны; внизу — цоколь с подъездом или въездом в паркинг */
+  const {x,w:tw,top}=t,hor=C.hor,col=PAL.facades[Math.floor(r()*PAL.facades.length)],side=3,both=f=>{f(gL);f(gD)};
+  const lt=mix(col,'#5a7a80',.2),dk=mix(col,'#000000',.35);
+  both(g=>{g.fillStyle=col;g.fillRect(x,top,tw,hor-top);g.fillStyle='#060a0b';g.fillRect(x+tw-side,top,side,hor-top);
+    g.fillStyle=lt;g.fillRect(x,top,1,hor-top);
+    /* карниз чуть шире дома, под ним тень */
+    g.fillStyle=lt;g.fillRect(x-1,top,tw+1,2);g.fillStyle=mix(col,'#8aa0a6',.3);g.fillRect(x-1,top,tw+1,1);g.fillStyle='#05080a';g.fillRect(x,top+2,tw,1)});
+  /* крыша */
+  const roof=[];let rx=x+3;
+  while(rx<x+tw-side-8){const q=r();
+    if(q<.22){const bx=rx;roof.push(g=>{                                           /* бак для воды на опорах */
+      g.fillStyle='#1a1512';g.fillRect(bx,top-9,7,6);g.fillStyle='#2a2018';g.fillRect(bx+1,top-9,1,6);g.fillRect(bx+4,top-9,1,6);
+      g.fillStyle='#120e0c';g.fillRect(bx+1,top-11,5,2);g.fillRect(bx+3,top-12,1,1);
+      g.fillStyle='#0c1012';g.fillRect(bx,top-3,1,3);g.fillRect(bx+6,top-3,1,3);g.fillRect(bx+3,top-3,1,3);g.fillRect(bx,top-2,7,1)});rx+=10}
+    else if(q<.45){const bx=rx,n=1+Math.floor(r()*2);roof.push(g=>{for(let i=0;i<n;i++){  /* блоки кондиционеров */
+      g.fillStyle='#1e282b';g.fillRect(bx+i*5,top-4,4,4);g.fillStyle='#0d1315';g.fillRect(bx+i*5+1,top-3,2,2);g.fillStyle='#2c3a3e';g.fillRect(bx+i*5,top-4,4,1)}});rx+=n*5+3}
+    else if(q<.58){const bx=rx;roof.push(g=>{g.fillStyle='#1a2326';g.fillRect(bx+2,top-5,1,5);   /* тарелка */
+      g.fillStyle='#2e3b40';g.fillRect(bx,top-8,4,1);g.fillRect(bx+1,top-7,3,1);g.fillRect(bx+3,top-9,1,1)});rx+=7}
+    else if(q<.7){const bx=rx,ah=6+Math.floor(r()*10);roof.push(g=>{g.fillStyle='#1a2326';g.fillRect(bx,top-ah,1,ah);  /* антенна */
+      g.fillRect(bx-2,top-ah+2,5,1);g.fillRect(bx-1,top-ah+5,3,1)});rx+=6}
+    else if(q<.8){const bx=rx;roof.push(g=>{g.fillStyle='#141c1e';g.fillRect(bx,top-6,6,6);g.fillStyle='#202a2d';g.fillRect(bx,top-6,6,1);  /* выход на крышу */
+      g.fillStyle='#0a0f10';g.fillRect(bx+2,top-4,2,4)});rx+=9}
+    else rx+=4+Math.floor(r()*6)}
+  /* ограждение по краю крыши */
+  roof.push(g=>{g.fillStyle='#10181a';g.fillRect(x,top-2,tw-side,1);for(let xx=x;xx<x+tw-side;xx+=3)g.fillRect(xx,top-2,1,2)});
+  roof.forEach(both);
+  const fl=10,q=r(),main=q<.7?PAL.win[0]:q<.9?PAL.win[3]:PAL.win[5],belt=2+Math.floor(r()*2);
+  let fi=0;
+  for(let yy=top+6;yy<hor-24;yy+=fl,fi++){
+    if(fi%belt===belt-1)both(g=>{g.fillStyle=mix(col,'#5a7a80',.1);g.fillRect(x+1,yy+8,tw-side-1,1)});
     for(let xx=x+3;xx<x+tw-side-5;xx+=8){const on=r()<.3;
-      for(const g of [gL,gD]){g.fillStyle='#050809';g.fillRect(xx-1,yy-1,6,8);g.fillStyle='#1c2629';g.fillRect(xx-1,yy+6,6,1)}
+      both(g=>{g.fillStyle='#050809';g.fillRect(xx-1,yy-1,6,8);g.fillStyle='#1c2629';g.fillRect(xx-1,yy+6,6,1);g.fillStyle=dk;g.fillRect(xx-1,yy-2,6,1)});
       gD.fillStyle='#0b1316';gD.fillRect(xx,yy,4,6);
       gL.fillStyle=on?main:'#0b1316';gL.fillRect(xx,yy,4,6);
-      if(on&&r()<.35){gL.fillStyle=mix(main,'#000000',.5);gL.fillRect(xx,yy,4,3)}
+      if(on){const c=r();
+        if(c<.3){gL.fillStyle=mix(main,'#000000',.5);gL.fillRect(xx,yy,4,3)}                          /* штора */
+        else if(c<.45){gL.fillStyle=mix(main,'#000000',.6);gL.fillRect(xx+1,yy+2,2,4);gL.fillRect(xx+1,yy+1,2,1)}  /* силуэт в окне */
+        else if(c<.55){gL.fillStyle='#6f9bff';gL.fillRect(xx,yy,4,6);gL.fillStyle='#9fc0ff';gL.fillRect(xx+1,yy+3,2,2)} /* свет телевизора */
+        gL.fillStyle=mix(main,'#000000',.35);gL.fillRect(xx+2,yy,1,6)}                                    /* переплёт */
+      else{gL.fillStyle='#0f1a1d';gL.fillRect(xx+2,yy,1,6)}
       if(on&&t.fc&&(xx<C.w*.3||xx>C.w*.7))t.fc.push({x:xx+1,y:yy+2});
-      if(r()<.18)for(const g of [gL,gD]){g.fillStyle='#202a2c';g.fillRect(xx,yy+7,4,2);g.fillStyle='#121a1c';g.fillRect(xx,yy+8,4,1)}
+      if(r()<.18)both(g=>{g.fillStyle='#202a2c';g.fillRect(xx,yy+7,4,2);g.fillStyle='#121a1c';g.fillRect(xx,yy+8,4,1)})
     }
   }
-  if(t.esc)for(let yy=top+14;yy<hor-20;yy+=fl)for(const g of [gL,gD]){g.fillStyle='#1a2224';g.fillRect(x+tw-side-14,yy,12,1);for(let k=0;k<9;k++)g.fillRect(x+tw-side-13+k+((Math.floor((yy-top)/fl))%2?0:0),yy-k,1,1)}
-  /* первый этаж: витрина с тёплым светом, навес, дверь */
-  const sw=tw-side-12,sx=x+3,sy=hor-12;
-  for(const g of [gL,gD]){g.fillStyle='#050809';g.fillRect(sx-1,sy-1,sw+2,11);g.fillRect(x+tw-side-8,hor-12,5,12)}
-  const shop=t.shopCol||'#f3b865';
-  for(let yy=0;yy<9;yy++)for(let xx=0;xx<sw;xx++){gD.fillStyle='#0a1012';gD.fillRect(sx+xx,sy+yy,1,1);gL.fillStyle=dith(sx+xx,sy+yy,.55-yy*.03)?mix(shop,'#ffffff',.15):mix(shop,'#000000',.55);gL.fillRect(sx+xx,sy+yy,1,1)}
-  for(const g of [gL,gD]){g.fillStyle='#050809';for(let xx=sx+6;xx<sx+sw;xx+=7)g.fillRect(xx,sy,1,9)}
-  gL.fillStyle=mix(shop,'#000000',.3);gL.fillRect(x+tw-side-7,hor-11,3,3);
-  if(t.awn){for(let xx=0;xx<sw+2;xx++)for(const g of [gL,gD]){g.fillStyle=(xx>>1)%2?t.awn:mix(t.awn,'#000000',.55);g.fillRect(sx-1+xx,sy-4,1,3)}}
+  if(t.esc)for(let yy=top+14;yy<hor-22;yy+=fl)both(g=>{g.fillStyle='#1a2224';g.fillRect(x+tw-side-14,yy,12,1);g.fillRect(x+tw-side-14,yy-3,1,3);g.fillRect(x+tw-side-3,yy-3,1,3);
+    for(let k=0;k<9;k++)g.fillRect(x+tw-side-13+k,yy-k,1,1)});
+  /* цоколь: тёмный камень, пилястры, над ним пояс */
+  const pb=hor-14;
+  both(g=>{g.fillStyle=dk;g.fillRect(x,pb,tw-side,14);g.fillStyle=lt;g.fillRect(x,pb-1,tw-side,1);g.fillStyle='#05080a';g.fillRect(x,pb,tw-side,1);
+    g.fillStyle=mix(dk,'#000000',.4);for(let xx=x+2;xx<x+tw-side;xx+=9)g.fillRect(xx,pb+1,2,13);g.fillStyle='#04070a';g.fillRect(x,hor-1,tw,1)});
+  const kind=r(),mx=x+Math.round((tw-side)/2);
+  if(kind<.5){                                                                    /* подъезд: стеклянные двери, козырёк, два бра */
+    both(g=>{g.fillStyle='#030506';g.fillRect(mx-5,pb+2,10,12);g.fillStyle='#1c2629';g.fillRect(mx-7,pb+1,14,1)});
+    for(let yy=pb+3;yy<hor;yy++)for(let xx=mx-4;xx<mx+4;xx++){gD.fillStyle='#0b1012';gD.fillRect(xx,yy,1,1);gL.fillStyle=xx===mx-1||xx===mx?'#2a2218':dith(xx,yy,.5-(yy-pb)*.03)?'#c89a5a':'#7a5a34';gL.fillRect(xx,yy,1,1)}
+    gL.fillStyle='#ffe2a8';gL.fillRect(mx-7,pb+3,1,1);gL.fillRect(mx+6,pb+3,1,1);gD.fillStyle='#2a2620';gD.fillRect(mx-7,pb+3,1,1);gD.fillRect(mx+6,pb+3,1,1)}
+  else if(kind<.8){                                                               /* въезд в паркинг и знак «Парковка» */
+    both(g=>{for(let yy=pb+3;yy<hor;yy++){g.fillStyle=yy%2?'#1a2226':'#10171a';g.fillRect(mx-7,yy,14,1)}g.fillStyle='#05080a';g.fillRect(mx-8,pb+2,16,1)});
+    const sx=mx+10;if(sx+5<x+tw-side){both(g=>{g.fillStyle='#0c1214';g.fillRect(sx+2,pb+6,1,8)});
+      gL.fillStyle='#2a5ad8';gL.fillRect(sx,pb+1,5,5);pxPark(gL,sx+1,pb+2,'#ffffff');gD.fillStyle='#0e1a36';gD.fillRect(sx,pb+1,5,5);pxPark(gD,sx+1,pb+2,'#2a3450')}}
+  else{                                                                           /* глухой цоколь: вентрешётки, маленькие окна с решётками */
+    for(let xx=x+5;xx<x+tw-side-6;xx+=9){both(g=>{g.fillStyle='#050809';g.fillRect(xx,pb+4,5,4)});gD.fillStyle='#0b1316';gD.fillRect(xx+1,pb+5,3,2);
+      gL.fillStyle=r()<.35?'#6a5a3c':'#0b1316';gL.fillRect(xx+1,pb+5,3,2);both(g=>{g.fillStyle='#050809';g.fillRect(xx+2,pb+5,1,2)})}}
 }
+/* буква P для знака парковки, 3×3 */
+function pxPark(g,x,y,c){g.fillStyle=c;g.fillRect(x,y,2,1);g.fillRect(x,y+1,1,2);g.fillRect(x+2,y,1,2);g.fillRect(x+1,y+1,1,1)}
 function bakeCity(r){
   const w=C.w,h=C.h,hor=C.hor,Lt=layer(w,hor),Dk=layer(w,hor),gL=Lt.getContext('2d'),gD=Dk.getContext('2d');
   const fc=[];C.rects=[];
   /* квартал: средние башни, справа ниже — чтобы был виден Эмпайр-стейт */
-  for(let x=-3;x<w;){const tw=14+Math.round(r()*20),near=x+tw>w*.85&&x<w*.95,th=Math.round(h*(near?.06+r()*.06:.22+r()*.34)),t={x,w:tw,top:hor-th,fc};
+  const ek=(hor-3)/443,eL=w*.9-52*ek,eR=w*.9+52*ek;C.esbSpan=[eL,eR];
+  for(let x=-3;x<w;){const tw=14+Math.round(r()*20),near=x+tw>eL&&x<eR,th=Math.round(h*(near?.06+r()*.06:.22+r()*.34)),t={x,w:tw,top:hor-th,fc};
     midTower(gL,gD,r,t);C.rects.push(Object.assign(t,{pw:1,pt:1,dl:0,dip:0}));x+=Math.round(tw*(.8+r()*.45))}
   const blk=megaBlock(gL,gD,r,Math.round(w*.02),Math.round(Math.min(74,w*.24)),Math.round(hor-h*.62));C.rects.push(Object.assign(blk,{pw:1,pt:1,dl:0,dip:0}));
   C.volt={x:blk.x+6,y:blk.top+12,w:20,h:30,ri:C.rects.length-1};
   const sp=corpSpire(gL,gD,Math.round(w*.74),Math.round(Math.max(16,Math.min(26,w*.07))));C.rects.push(Object.assign(sp,{pw:1,pt:1,dl:0,dip:0}));
   /* дома на улице */
-  const shops=[['#f3b865','#ff4f9a'],['#9fe0d4',null],['#ff8fc0','#4ff0d0'],['#f3b865','#ffb347'],['#c8e0ff',null],['#f3b865','#9be05a']];
-  let si=0;
-  for(let x=-6;x<w+6;){const tw=42+Math.round(r()*30),esb=x+tw>w*.86&&x<w*.94,cx=x+tw/2,side=(cx>w*.02&&cx<w*.3)||(cx>w*.66&&cx<w*.8);
-    let th=Math.round(esb?Math.min(h*.2,34+r()*16):Math.min(h*.5,40+r()*h*.36));if(side&&!esb)th=Math.max(th,Math.round(h*.4));const sh=shops[si++%shops.length];
-    const t={x,w:tw,top:hor-th,fc,shopCol:sh[0],awn:sh[1],esc:r()<.3,front:1};
+  for(let x=-6;x<w+6;){const tw=42+Math.round(r()*30),esb=x+tw>eL+6&&x<eR-6,cx=x+tw/2,side=(cx>w*.02&&cx<w*.3)||(cx>w*.66&&cx<w*.8);
+    let th=Math.round(esb?Math.min(h*.2,38+r()*12):Math.min(h*.5,44+r()*h*.34));if(side&&!esb)th=Math.max(th,Math.round(h*.4));
+    const t={x,w:tw,top:hor-th,fc,esc:r()<.3,front:1};
     frontBuilding(gL,gD,r,t);C.rects.push(Object.assign(t,{pw:1,pt:1,dl:0,dip:0}));x+=tw+(r()<.4?Math.round(4+r()*8):0)}
   C.cityLit=Lt;C.cityDark=Dk;
   C.beacons=C.beacons.filter(o=>o.far||!C.rects.some(t=>t.front&&o.x>=t.x&&o.x<t.x+t.w&&o.y>=t.top-2));
@@ -481,12 +562,6 @@ function setupSigns(){
     if(!t.front){sy=t.top+5;const ft=Math.min(...C.rects.filter(f=>f.front&&f.x<sx+sw&&f.x+f.w>sx).map(f=>f.top),hor);if(sy+sh>ft-2){t.taken=0;return}}
     if(hitsScreen(sx,sy,sw,sh)){t.taken=0;return}
     add(Object.assign(s,{k:'v',x:sx,y:sy,w:sw,h:sh,cell,ri:C.rects.indexOf(t)}))});
-  /* вывески над витринами */
-  const H2=[{txt:'NOODLES',col:PAL.neon.pink,icon:'bowl'},{txt:'ИМПЛАНТЫ',col:PAL.neon.green,mode:'pulse'},{txt:'CANTINA',col:PAL.neon.red},{txt:'BAR',col:PAL.neon.amber,icon:'glass'},
-    {txt:'24/7',col:PAL.neon.blue},{txt:'酒',cjk:1,col:PAL.neon.red,lantern:1},{txt:'ТАТУ',col:PAL.neon.violet},{txt:'PACHINKO',col:PAL.neon.yellow,mode:'chase'}];
-  const fronts=C.rects.filter(t=>t.front&&t.x>=1&&t.x+t.w<=w-1).sort((a,b2)=>Math.abs(a.x+a.w/2-w*.5)<Math.abs(b2.x+b2.w/2-w*.5)?1:-1),pool=H2.slice();
-  fronts.forEach(t=>{const i=pool.findIndex(s=>(s.cjk?13:textW(s.txt)+(s.icon?9:0)+6)<=t.w-10);if(i<0)return;const s=pool.splice(i,1)[0],sw=s.cjk?13:textW(s.txt)+(s.icon?9:0)+6;
-    add(Object.assign({},s,{k:'h',x:Math.round(t.x+(t.w-3-sw)/2),y:hor-28,w:sw,h:s.cjk?14:11,ri:C.rects.indexOf(t)}))});
   C.fall=null;const fs=C.signs.find(s=>s.fall);if(fs)C.fall={s:fs,st:'ok',t:0,a:0,va:0,y:0,vy:0};
 }
 /* --- фонари, дирижабль --- */
@@ -494,7 +569,7 @@ function bakeLamps(r){
   const w=C.w,hor=C.hor,L=layer(w,C.h),g=L.getContext('2d');C.lamps=[];
   for(let x=12+Math.round(r()*20);x<w;x+=52+Math.round(r()*24)){
     C.lamps.push(x);g.fillStyle='#0d1719';g.fillRect(x,hor-24,1,28);g.fillRect(x,hor-24,5,1);
-    for(let y=hor-22;y<hor+5;y++){const k=(y-(hor-22))/27,hw=Math.round(1+k*8);for(let xx=x+4-hw;xx<=x+4+hw;xx++)if(dith(xx,y,.28*(1-k*.3))){g.fillStyle='#5a4222';g.fillRect(xx,y,1,1)}}
+    for(let y=hor-22;y<hor+12;y++){const k=(y-(hor-22))/34,hw=Math.round(1+k*9);for(let xx=x+4-hw;xx<=x+4+hw;xx++)if(dith(xx,y,(y>hor+5?.12:.2)*(1-k*.4)*(1-Math.abs(xx-x-4)/(hw+1)*.6))){g.fillStyle='#5a4222';g.fillRect(xx,y,1,1)}}
     g.fillStyle='#ffd68a';g.fillRect(x+3,hor-23,3,1);
   }
   C.lampL=L;
@@ -512,57 +587,188 @@ function sizeBg(){
   C.P=Math.max(2,Math.round(vh/280));C.w=Math.ceil(vw/C.P);C.h=Math.ceil(vh/C.P);
   bg.width=C.w;bg.height=C.h;bg.style.width=C.w*C.P+'px';bg.style.height=C.h*C.P+'px';
   b.imageSmoothingEnabled=false;
-  C.hor=Math.round(C.h*.71);C.U=layer(C.w,C.hor+6);C.UG=C.U.getContext('2d');C.road0=C.hor+6;C.laneA=C.hor+17;C.laneB=C.hor+32;C.near0=C.hor+35;
+  C.hor=Math.round(C.h*.71);C.U=layer(C.w,C.hor+6);C.UG=C.U.getContext('2d');C.road0=C.hor+6;C.roadB=C.h-6;C.ls=(C.roadB-C.road0)/4;
   C.beacons=[];C.fires=[];C.smoke=[];C.sparks=[];
   const r=srnd(7331);
   bakeSky();bakeFar(r);bakeCity(r);setupSigns();bakeLamps(r);bakeBlimp();
   C.koiC=layer(C.w,C.h);if(C.koi)C.koi.bb=null;if(typeof resetCaches==='function')resetCaches();
-  C.cars=[];for(let i=0;i<Math.max(3,Math.round(C.w/45));i++)C.cars.push(newCar(Math.random()*C.w,i%2?1:-1));
+  bakeRoad();initCars();
   C.rain=Array.from({length:Math.round(C.w*C.h/150)},()=>({x:Math.random()*C.w,y:Math.random()*C.h,v:160+Math.random()*120,z:Math.random()}));
   C.air=[];for(const [yy,v] of [[.14,22],[.22,-16],[.3,12]])for(let i=0;i<Math.round(C.w/40);i++)C.air.push({x:Math.random()*C.w,y:Math.round(C.h*yy),v:v*(.8+Math.random()*.4)});
   if(!C.koi)C.koi={u:Math.random()*6.3,pts:[],glitch:0,vis:1};C.koi.pts=[];
   if(!C.blimp)C.blimp={x:C.w*.6,d:-1,ad:0,adT:0,off:0};
-  C.people=[];for(let i=0;i<Math.round(C.w/22);i++)C.people.push(newPerson(Math.random()*C.w));
 }
 
-/* --- прохожие и машины --- */
-const COATS=['#2a3238','#3a2e38','#26303a','#463a2c','#2e3a32','#3a3a44','#4a2a3a'],UMB=['#ff4f9a','#4ff0d0','#9fb8c0','#ffb347',null,null,null],GLOW=['#4ff0d0','#ff4f9a',null,null,null,null];
-function newPerson(x){const d=Math.random()<.5?1:-1,near=Math.random()<.3;return{x:x!=null?x:(d>0?-6:C.w+6),d,v:5+Math.random()*4,coat:COATS[Math.floor(Math.random()*COATS.length)],umb:UMB[Math.floor(Math.random()*UMB.length)],gl:GLOW[Math.floor(Math.random()*GLOW.length)],ph:Math.random()*10,run:0,stop:0,flee:0,near}}
-function drawPerson(p){
-  const x=Math.round(p.x),y=p.near?C.near0+4:C.hor+4,f=Math.floor(p.ph)%2,run=p.run>.5,dk='#0a1012';
-  b.fillStyle='#c4a088';b.fillRect(x+1,y-8,2,2);b.fillStyle='#1a1416';b.fillRect(x+1,y-8,2,1);
-  b.fillStyle=p.coat;b.fillRect(x,y-6,4,4);if(p.gl){b.fillStyle=p.gl;b.fillRect(p.d>0?x+3:x,y-6,1,4)}
-  if(run){b.fillStyle=p.coat;b.fillRect(x+(p.d>0?3:-1),y-6+f,2,1)}
-  b.fillStyle=dk;
-  if(p.stop>0){b.fillRect(x+1,y-2,1,2);b.fillRect(x+2,y-2,1,2)}
-  else if(run){if(f){b.fillRect(x,y-2,1,2);b.fillRect(x+3,y-2,1,1)}else{b.fillRect(x+1,y-2,1,1);b.fillRect(x+2,y-2,1,2);b.fillRect(x+(p.d>0?0:3),y-1,1,1)}}
-  else{if(f){b.fillRect(x+1,y-2,1,2);b.fillRect(x+3,y-2,1,2)}else{b.fillRect(x+1,y-2,1,2);b.fillRect(x+2,y-2,1,2)}}
-  if(p.umb&&!run){b.fillStyle=p.umb;b.fillRect(x-1,y-11,6,1);b.fillRect(x-2,y-10,8,1);b.fillStyle='#0d1517';b.fillRect(x+2,y-9,1,2)}
+/* --- дорога: четыре полосы, по две в каждую сторону (правостороннее движение: дальние полосы едут влево).
+       Разметка: 1.2 по краям проезжей части, 1.5 между полосами одного направления, 1.3 по оси.
+       Автобусы и грузовики — только в крайних правых полосах. Машины держат дистанцию и тормозят. --- */
+const CARSP={
+  sedan:{w:24,rows:[
+    '........RRRRRRR.........',
+    '.......RGgGGKGgGGR......',
+    '......RGGGGGKGGGGGRR....',
+    '..RRRRRRRRRRRRRRRRRRRRRR',
+    'TBBBBBBBBBBBBBBBBBBBBBBH',
+    'TBBSSSSSSSSSSSSSSSSSSBBB',
+    'KDDWWWWDDDDDDDDDDWWWWDDK',
+    '...WwwW..........WwwW...']},
+  hatch:{w:20,rows:[
+    '.....RRRRRRRR.......',
+    '....RGGgGKGGgGR.....',
+    '....RGGGGKGGGGGRR...',
+    '..RRRRRRRRRRRRRRRRRR',
+    'TBBBBBBBBBBBBBBBBBBH',
+    'TBBSSSSSSSSSSSSSSBBB',
+    'KDDWWWWDDDDDDWWWWDDK',
+    '...WwwW......WwwW...']},
+  sport:{w:24,rows:[
+    '...........RRRRR........',
+    '.........RGGGgGGGR......',
+    '...RRRRRRRRRRRRRRRRRRR..',
+    'TBBBBBBBBBBBBBBBBBBBBBBH',
+    'KDDWWWWDDDDDDDDDDWWWWDDK',
+    '.NNWwwWNNNNNNNNNNWwwWNN.']},
+  van:{w:26,rows:[
+    '..RRRRRRRRRRRRRRRRRR......',
+    '.RBBBBBBBBBBBBBBBBBBRR....',
+    '.BBBBBBBBBBBBBBBBBBGGgR...',
+    '.BBBBBBBBBBBBBBBBBBGGGGR..',
+    '.BBBBBBBBBBBBBBBBBBGGGGGR.',
+    'TBBBBBBBBBBBBBBBBBBBBBBBBH',
+    'TBBSSSSSSSSSSSSSSSSSSSSSBB',
+    'BDDDDDDDDDDDDDDDDDDDDDDDDD',
+    'KDDWWWWDDDDDDDDDDDWWWWDDDK',
+    '...WwwW...........WwwW....']},
+  bike:{w:13,rows:[
+    '.....KKK.....',
+    '....KKKgg....',
+    '.....YYK.....',
+    '....YYYYKK...',
+    '..TBBBBBBBBH.',
+    '...KDDDDDDK..',
+    '.WWW.....WWW.',
+    'WwKwW...WwKwW',
+    '.WWW.....WWW.']}
+};
+/* автобус и грузовик собираем кодом: у автобуса светлые окна с пассажирами, у грузовика реклама на фургоне */
+(function(){
+  const bus=[],W=46,row=c=>c.repeat(W);
+  bus.push('.'+'R'.repeat(W-2)+'.');
+  bus.push('RBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBYYYYB');
+  for(let r=0;r<3;r++){let s='BB';const r2=srnd(77+r);for(let i=0;i<38;i++)s+=i%4===3?'K':(r>0&&r2()<.18?'P':'L');bus.push(s+'BGGGGB'.slice(0,W-s.length))}
+  bus.push('BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBGGGGB');
+  bus.push('BSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSBGGGGB');
+  bus.push('TBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBH');
+  bus.push('TBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB');
+  bus.push('KDDWWWWWDDDDDDDDDDDDDDDDDDDDDDDDDDDDDWWWWWDDDK');
+  bus.push('...WWwwWW............................WWwwWW...');
+  CARSP.bus={w:W,rows:bus.map(s=>s.padEnd(W,'.').slice(0,W))};
+  const tr=[],T2=38;
+  tr.push('.AAAAAAAAAAAAAAAAAAAAAAAAAAA..........');
+  for(let r=0;r<10;r++)tr.push('AAAAAAAAAAAAAAAAAAAAAAAAAAAA'+(r===4?'.RRRRRR...':r===5?'.RBBBBGR..':r===6?'.BBBBGGgR.':r===7?'.BBBBGGGGR':r>7?'.BBBBBBBBB':'..........'));
+  tr.push('TDDDDDDDDDDDDDDDDDDDDDDDDDDD.BBBBBBBBH');
+  tr.push('KKKKKKKKKKKKKKKKKKKKKKKKKKKKKBBSSSSSBB');
+  tr.push('..KWWWWKWWWWK..........KKKKKDWWWWDDDK');
+  tr.push('...WwwW.WwwW.............. ..WwwW....'.replace(' ','.'));
+  CARSP.truck={w:T2,rows:tr.map(s=>s.padEnd(T2,'.').slice(0,T2)),ad:{x:2,y:3,w:24,h:7}};
+})();
+const CARCOL={sedan:['#2a3a44','#3a2a3a','#1e2a30','#4a4a52','#5a2a2a','#2a4a46','#6a6a70'],hatch:['#3a5a62','#5a3a2a','#2e2e3a','#7a6a3a'],
+  sport:['#c8323e','#1a1a22','#e0e0e8','#3a2a6a'],van:['#3a4048','#2a3436','#5a5a50'],bike:['#7a2a3a','#2a5a6a','#5a5a62'],bus:['#2a4a5a','#5a2a2a'],truck:['#2a3038']};
+const TRUCKAD=[['NOVA','#ffb347','#2a1a0a'],['ЛУНА','#4ff0d0','#08201e'],['SOBA','#ff4f9a','#2a0a1a'],['ZETA','#9be05a','#102008']];
+const CARSPR={};
+function carSprite(type,body,d,neon,ad){
+  const key=type+body+d+(neon||'')+(ad?ad[0]:'');if(CARSPR[key])return CARSPR[key];
+  const S=CARSP[type],h=S.rows.length,RH=4,c=layer(S.w,h+RH),g=c.getContext('2d');
+  const P={R:mix(body,'#ffffff',.22),B:body,D:mix(body,'#000000',.45),S:mix(body,'#ffffff',.08),K:'#06090a',G:'#14303a',g:'#4e8696',W:'#040506',w:'#4a5458',
+    H:'#fff4d0',T:'#ff2a3a',Y:type==='bike'?'#2c3438':'#ffb347',L:'#e8d49a',P:'#3a3020',N:neon||'#000000',A:'#3a434b'};
+  const rows=d>0?S.rows:S.rows.map(s=>[...s].reverse().join('')),info={w:S.w,h,heads:[],tails:[]};
+  if(g&&g.fillRect){
+    rows.forEach((s,y)=>{for(let x=0;x<s.length;x++){const ch=s[x];if(ch==='.'||!P[ch])continue;if(ch==='N'){g.globalAlpha=.55}g.fillStyle=P[ch];g.fillRect(x,y,1,1);g.globalAlpha=1;
+      if(ch==='H')info.heads.push([x,y]);if(ch==='T')info.tails.push([x,y])}});
+    if(ad&&S.ad){const A=S.ad,ax=d>0?A.x:S.w-A.x-A.w,tw=textW(ad[0]);g.fillStyle=ad[2];g.fillRect(ax-1,A.y-2,A.w+2,A.h+2);pxText(g,ad[0],ax+Math.round((A.w-tw)/2),A.y-1,ad[1])}
+    /* отражение в мокром асфальте: перевёрнутый силуэт и полосы от фар и стоп-сигналов */
+    for(let k=0;k<RH;k++){const sy=h-1-k;if(sy<0)break;g.globalAlpha=.13*(1-k/RH);g.drawImage(c,0,sy,S.w,1,0,h+k,S.w,1)}
+    for(const [x] of info.heads)for(let k=0;k<RH;k++){g.globalAlpha=.3*(1-k/RH);g.fillStyle='#fff0c0';g.fillRect(x,h+k,1,1)}
+    for(const [x] of info.tails)for(let k=0;k<RH;k++){g.globalAlpha=.28*(1-k/RH);g.fillStyle='#ff2a3a';g.fillRect(x,h+k,1,1)}
+    g.globalAlpha=1}
+  return CARSPR[key]={c,...info};
 }
-const CARS=[
-  {k:'sedan',w:20,body:['#2a3a44','#3a2a3a','#1e2a30','#4a4a52','#5a2a2a']},
-  {k:'van',w:22,body:['#3a4048','#2a3436']},
-  {k:'taxi',w:20,body:['#d9a520']},
-  {k:'bike',w:11,body:['#1a1a1e','#2a1a2a']}
-];
-function newCar(x,d){const pol=Math.random()<C.heat*.45,T=pol?CARS[0]:CARS[Math.floor(Math.random()*CARS.length)];
-  return{x:x!=null?x:(d>0?-30:C.w+30),d,v:28+Math.random()*22,t:T.k,w:T.w,body:pol?'#d8dde0':T.body[Math.floor(Math.random()*T.body.length)],pol}}
+/* конус света фар, свечение стоп-сигналов */
+const HBEAM={};
+function headBeam(d){if(HBEAM[d])return HBEAM[d];const L=34,H=9,c=layer(L,H),g=c.getContext('2d');
+  if(g&&g.fillRect)for(let k=0;k<L;k++){const hh=.6+k*.12;for(let y=0;y<H;y++){const dy=Math.abs(y-2)*(y<2?1.8:1),f=1-dy/(hh+1);if(f<=0)continue;
+    g.globalAlpha=.3*Math.pow(1-k/L,1.4)*f;g.fillStyle='#ffeec0';g.fillRect(d>0?k:L-1-k,y,1,1)}}
+  return HBEAM[d]=c}
+function laneY(i){return Math.round(C.road0+C.ls*(i+.82))}
+function newCar(lane,x){
+  const d=lane<2?-1:1,outer=lane===0||lane===3,pol=Math.random()<C.heat*.4;
+  let type;const q=Math.random();
+  if(pol)type='sedan';else if(outer&&q<.16)type=q<.08?'bus':'truck';else{const o=['sedan','sedan','hatch','hatch','van','sport','bike','taxi'];type=o[Math.floor(Math.random()*o.length)]}
+  const taxi=type==='taxi';if(taxi)type='sedan';
+  const body=pol?'#d8dde0':taxi?'#d9a520':CARCOL[type][Math.floor(Math.random()*CARCOL[type].length)];
+  const neon=type==='sport'?[PAL.neon.pink,PAL.neon.teal,PAL.neon.violet][Math.floor(Math.random()*3)]:null;
+  const ad=type==='truck'?TRUCKAD[Math.floor(Math.random()*TRUCKAD.length)]:null;
+  const big=type==='bus'||type==='truck',fast=lane===1||lane===2;
+  const v0=(big?24:fast?40:30)+Math.random()*(fast?16:8)+(type==='sport'||type==='bike'?8:0);
+  const S=CARSP[type];
+  return{lane,d,type,body,neon,ad,taxi,pol,w:S.w,x:x!=null?x:(d>0?-S.w-4:C.w+4),v:v0,v0,brake:0}
+}
+function initCars(){
+  C.cars=[];const n=Math.max(2,Math.round(C.w/80));
+  for(let lane=0;lane<4;lane++){let x=Math.random()*40;for(let i=0;i<n&&x<C.w;i++){const c=newCar(lane,0);c.x=lane<2?C.w-x-c.w:x;C.cars.push(c);x+=c.w+20+Math.random()*C.w/n}}
+}
+function updateCars(s,H_){
+  const w=C.w,mul=1+H_*.6;
+  for(let lane=0;lane<4;lane++){
+    const L=C.cars.filter(c=>c.lane===lane),d=lane<2?-1:1,front=c=>d>0?c.x+c.w:-c.x,back=c=>d>0?c.x:-(c.x+c.w);
+    L.sort((a,b2)=>front(b2)-front(a));
+    for(let i=0;i<L.length;i++){const c=L[i],ah=L[i-1];let tg=c.v0*mul;
+      if(ah){const gap=back(ah)-front(c),safe=5+c.v*.3;if(gap<safe)tg=Math.min(tg,ah.v*Math.max(0,gap/safe));}
+      c.brake=tg<c.v-3?Math.min(1,c.brake+s*6):Math.max(0,c.brake-s*3);
+      c.v+=(tg-c.v)*(1-Math.exp(-s*(tg<c.v?5:1)));c.x+=d*c.v*s;
+      if(d>0?c.x>w+6:c.x+c.w<-6){                                                   /* уехала — въезжает новая, позади последней в полосе */
+        const nc=newCar(lane,null),rear=L.reduce((m,o)=>o===c?m:Math.min(m,front(o)-o.w),Infinity),entry=Math.min(d>0?-6:-(w+6),rear-12-Math.random()*50);
+        nc.x=d>0?entry-nc.w:-entry;Object.assign(c,nc)}
+    }
+  }
+}
 function drawCar(c){
-  const y=c.d>0?C.laneB:C.laneA,x=Math.round(c.x),w=c.w,front=c.d>0?x+w-1:x,back=c.d>0?x:x+w-1,fx=c.d>0?1:-1;
-  const R=(xx,yy,ww,hh,col)=>{b.fillStyle=col;b.fillRect(c.d>0?x+xx:x+w-xx-ww,yy,ww,hh)};
-  /* свет фар на мокром асфальте */
-  for(let k=0;k<14;k++)for(let yy=-1;yy<=1;yy++)if(dith(front+fx*(k+2),y-1+yy,.35*(1-k/14))){b.fillStyle='#8a8060';b.fillRect(front+fx*(k+2),y-1+yy,1,1)}
-  if(c.t==='bike'){R(1,y-3,9,2,c.body);R(0,y-1,3,1,'#050708');R(8,y-1,3,1,'#050708');R(4,y-7,3,3,'#2a3238');R(5,y-9,2,2,'#c4a088');R(10,y-3,1,1,'#fff2c0');R(0,y-3,1,1,'#ff3b30');return}
-  const hgt=c.t==='van'?8:6;
-  R(1,y-hgt+2,w-2,hgt-3,c.body);                                         /* кузов */
-  if(c.t==='van')R(2,y-hgt,w-6,2,c.body);else R(5,y-hgt,w-11,2,c.body); /* крыша */
-  b.fillStyle='#0a1416';if(c.t==='van')R(w-8,y-hgt+1,5,2,'#9fd0d8');else R(6,y-hgt+1,w-13,1,'#8fb8c0');
-  R(0,y-3,w,1,mix(c.body,'#000000',.4));
-  R(3,y-1,4,1,'#050708');R(w-7,y-1,4,1,'#050708');R(4,y-1,2,1,'#2a3034');R(w-6,y-1,2,1,'#2a3034');
-  R(w-1,y-hgt+3,1,1,'#fff2c0');R(0,y-hgt+3,1,1,'#ff3b30');
-  if(c.t==='taxi'){R(8,y-hgt-1,4,1,'#ffe066')}
-  if(c.pol){const ph=Math.floor(C.t/120)%2;R(7,y-hgt-1,2,1,ph?'#ff3b4a':'#24305a');R(10,y-hgt-1,2,1,ph?'#24305a':'#6f9bff');R(1,y-4,w-2,1,'#1a2a6a')}
-  b.globalAlpha=.25;b.fillStyle='#ff3b30';b.fillRect(back-fx*2,y,3,2);b.globalAlpha=1;
+  const sp=carSprite(c.type,c.body,c.d,c.neon,c.ad),base=laneY(c.lane),x=Math.round(c.x),y=base-sp.h+1;
+  b.globalCompositeOperation='lighter';
+  if(sp.heads.length){const hb=headBeam(c.d),[hx,hy]=sp.heads[0];b.drawImage(hb,c.d>0?x+hx+1:x+hx-hb.width,y+hy-2)}
+  for(const [tx,ty] of sp.tails){b.globalAlpha=.25+c.brake*.5;b.fillStyle='#ff2a3a';b.fillRect(x+tx-1-(c.d>0?1:-1)*0,y+ty-1,3,3);
+    if(c.brake>.2){b.globalAlpha=.25*c.brake;b.fillRect(x+tx+(c.d>0?-5:1),y+ty-2,5,5)}}
+  b.globalAlpha=1;b.globalCompositeOperation='source-over';
+  b.drawImage(sp.c,x,y);
+  if(c.taxi){const tx=x+Math.round(c.w/2)-2;b.fillStyle='#ffe066';b.fillRect(tx,y-1,4,1);b.fillStyle='#2a2000';b.fillRect(tx+1,y-1,2,1)}
+  if(c.pol){const ph=Math.floor(C.t/110)%2,mx=x+Math.round(c.w/2)-3;b.fillStyle=ph?'#ff3b4a':'#24305a';b.fillRect(mx,y-1,3,1);b.fillStyle=ph?'#24305a':'#6f9bff';b.fillRect(mx+3,y-1,3,1);
+    b.fillStyle='#1a2a6a';b.fillRect(x+2,y+5,c.w-4,1);
+    b.globalCompositeOperation='lighter';b.drawImage(puff(4,.45,ph?'#ff3b4a':'#6f9bff'),mx-4+(ph?0:3),y-5);b.globalCompositeOperation='source-over'}
+}
+function bakeRoad(){
+  /* разметка и бордюры — статичный слой поверх отражений */
+  const w=C.w,h=C.h,hor=C.hor,L=layer(w,h-hor),g=L.getContext('2d'),r=srnd(4242),Y=y=>y-hor;
+  if(!g||!g.fillRect){C.roadL=L;return}
+  const paint='#6e7a74',worn=(x,y)=>r()<.86;
+  const solid=y=>{for(let x=0;x<w;x++)if(worn()){g.fillStyle=paint;g.fillRect(x,Y(y),1,1)}};
+  const dash=(y,on,off,o)=>{for(let x=-o;x<w;x+=on+off)for(let k=0;k<on;k++)if(x+k>=0&&x+k<w&&worn()){g.fillStyle=paint;g.fillRect(x+k,Y(y),1,1)}};
+  /* заплатки асфальта, трещины, люки */
+  for(let i=0;i<Math.round(w/30);i++){const px=Math.floor(r()*w),py=C.road0+2+Math.floor(r()*(C.roadB-C.road0-6)),pw=8+Math.floor(r()*20),ph=2+Math.floor(r()*4);
+    g.fillStyle=r()<.5?'rgba(20,32,36,.55)':'rgba(0,0,0,.35)';g.fillRect(px,Y(py),pw,ph)}
+  for(let i=0;i<Math.round(w/25);i++){let x=Math.floor(r()*w),y=C.road0+2+Math.floor(r()*(C.roadB-C.road0-4));g.fillStyle='rgba(0,0,0,.6)';
+    for(let k=0;k<6+r()*10;k++){g.fillRect(x,Y(y),1,1);x+=1;if(r()<.4)y+=r()<.5?-1:1}}
+  for(let i=0;i<Math.max(2,Math.round(w/110));i++){const mx=Math.floor(r()*(w-6)),lane=Math.floor(r()*4),my=Math.round(C.road0+C.ls*(lane+.45));
+    g.fillStyle='#1c2a2e';g.fillRect(mx+1,Y(my),4,1);g.fillRect(mx,Y(my)+1,6,1);g.fillStyle='#0a1214';g.fillRect(mx+1,Y(my)+1,4,1);g.fillStyle='#1c2a2e';g.fillRect(mx+1,Y(my)+2,4,1)}
+  /* разметка: 1.2 края, 1.5 между полосами (штрих 3 м, разрыв 9 м), двойная сплошная 1.3 по оси */
+  solid(C.road0+1);solid(C.roadB-2);
+  dash(Math.round(C.road0+C.ls),12,36,7);dash(Math.round(C.road0+C.ls*3),12,36,29);
+  const ax=Math.round(C.road0+C.ls*2);solid(ax-1);solid(ax+1);
+  /* ближний бордюр и тротуар */
+  g.fillStyle='#22383a';g.fillRect(0,Y(C.roadB),w,1);g.fillStyle='#16262a';g.fillRect(0,Y(C.roadB)+1,w,1);
+  g.fillStyle='#0c1618';g.fillRect(0,Y(C.roadB)+2,w,h-C.roadB-2);
+  g.fillStyle='#091213';for(let x=4;x<w;x+=9)g.fillRect(x,Y(C.roadB)+2,1,h-C.roadB-2);
+  g.fillStyle='#152326';for(let x=0;x<w;x++)if(dith(x,0,.3))g.fillRect(x,Y(C.roadB)+3,1,1);
+  C.roadL=L;
 }
 
 const PUFF={},BEAM={},FGLOW={};
@@ -581,7 +787,7 @@ function puff(R,a,c){const k=R+'|'+a+'|'+c;if(PUFF[k])return PUFF[k];const L=lay
 function cityEvent(type,n){
   if(type==='clear'){
     C.msgQ.unshift({s:['ЛИНИЯ','ДВЕ ЛИНИИ','ТРИ ЛИНИИ','КВАДРО!'][n-1],c:n===4?'#ff4f9a':'#4ff0d0'});
-    if(n===4){C.flash=1;C.koi.dart=1.2;C.people.forEach(p=>{p.stop=.35+Math.random()*.3;p.flee=2+Math.random()*2;p.d=Math.random()<.5?1:-1})}
+    if(n===4){C.flash=1;C.koi.dart=1.2}
   }
   if(type==='over'){C.dead=true;C.rects.forEach(t=>{t.dl=Math.abs(t.x+t.w/2-C.w/2)/(C.w/2)*1.1+Math.random()*.2;t.pt=0})}
   if(type==='start'||type==='menu'){
@@ -639,22 +845,11 @@ function cityUpdate(s){
     else if(F.st==='fall'){F.vy+=120*s;F.y+=F.vy*s;F.a+=s*1.6;
       if(sg.y+F.y+sg.h*.7>=hor+2){F.st='down';
         for(let i=0;i<30;i++)C.sparks.push({x:sg.x+Math.random()*sg.h,y:hor+2,vx:(Math.random()-.5)*60,vy:-10-Math.random()*40,g:90,life:.5+Math.random()*.7,age:0,c:i%3?'#ffc24a':'#fff2a8'});
-        for(let i=0;i<8;i++)C.smoke.push({x:sg.x+Math.random()*sg.h,y:hor+2,vx:(Math.random()-.5)*8,vy:-3-Math.random()*3,r:1,life:2+Math.random(),age:0,c:PAL.smoke[1]});
-        C.people.forEach(p=>{if(!p.near&&Math.abs(p.x-sg.x)<50){p.flee=4;p.d=p.x<sg.x?-1:1}})}}
+        for(let i=0;i<8;i++)C.smoke.push({x:sg.x+Math.random()*sg.h,y:hor+2,vx:(Math.random()-.5)*8,vy:-3-Math.random()*3,r:1,life:2+Math.random(),age:0,c:PAL.smoke[1]});}}
     else if(F.st==='down'&&H_<.25){F.st='ok';F.a=0;F.y=0;F.t=0}
   }
-  /* прохожие */
-  const want=Math.round(w/22*(1-sstep(.5,.95,H_)*.85)*(C.dead?.3:1));
-  if(C.people.length<want&&Math.random()<s*1.2)C.people.push(newPerson());
-  for(let i=C.people.length-1;i>=0;i--){const p=C.people[i];
-    if(p.stop>0){p.stop-=s;continue}
-    if(p.flee>0)p.flee-=s;
-    p.run=Math.max(p.flee>0?1:0,sstep(.55,.8,H_)*(i%3?1:.6));
-    const v=p.v*(1+H_*.6)*(p.run>.5?3.2:1);p.x+=p.d*v*s;p.ph+=s*v*.45;
-    if(p.x<-12||p.x>w+12){if(C.people.length>want)C.people.splice(i,1);else{p.d=-p.d;p.x=p.d>0?-8:w+8}}
-  }
-  /* машины: спокойно — поток, при накале быстрее и больше полиции */
-  for(let i=C.cars.length-1;i>=0;i--){const c=C.cars[i];c.x+=c.d*c.v*(1+H_*.7)*s;if(c.x>w+30||c.x<-30)C.cars[i]=newCar(null,c.d)}
+  /* машины: при накале быстрее и больше полиции */
+  updateCars(s,H_);
   for(const a of C.air){a.x+=a.v*(1+H_)*s;if(a.x>w+4)a.x=-4;if(a.x<-4)a.x=w+4}
   const wantSp=Math.round(H_*4.4);
   if(C.spinners.length<wantSp&&Math.random()<s*.4){const d=Math.random()<.5?1:-1;C.spinners.push({x:d>0?-10:w+10,y:C.h*(.2+Math.random()*.3),d,v:14+Math.random()*12,ph:Math.random()*6,a:Math.random()*6})}
@@ -830,10 +1025,10 @@ function drawBg(t,dt){
   b.drawImage(C.far,0,0);
   if(C.lampP<.98){b.globalAlpha=(1-C.lampP)*.5;b.fillStyle='#03080a';b.fillRect(0,0,w,hor);b.globalAlpha=1}
   /* огни на Эмпайр-стейт: как в Нью-Йорке, ночью подсвечена верхушка */
-  const E2=C.esb;if(E2&&C.lampP>.3){const u=E2.u,cx=E2.x,c1=H_>.7?'#ff3b4a':'#e8f0ff',c2=H_>.7?'#ff7a2a':'#4ff0d0';
-    b.fillStyle=c2;b.fillRect(Math.round(cx-4*u),Math.round(hor-121*u),Math.round(8*u),1);b.fillRect(Math.round(cx-3*u),Math.round(hor-124*u),Math.round(6*u),1);
-    b.fillStyle=c1;b.fillRect(Math.round(cx-2*u),Math.round(hor-134*u),Math.round(4*u),Math.round(10*u));
-    if(Math.sin(C.t/600)>0){b.fillStyle='#ff3b4a';b.fillRect(Math.round(cx),Math.round(hor-156*u),1,1)}}
+  /* подсветка верхушки Эмпайр-стейт: обычно белая с бирюзой, при накале — красная */
+  const E2=C.esb;if(E2&&C.lampP>.05){const cw=E2.cw,red=sstep(.6,.8,H_),a=Math.min(1,C.lampP);
+    if(red<1){b.globalAlpha=a*(1-red);b.drawImage(cw.a,cw.x,cw.y)}if(red>0){b.globalAlpha=a*red;b.drawImage(cw.b,cw.x,cw.y)}b.globalAlpha=1;
+    if(Math.sin(C.t/600)>0){b.fillStyle='#ff3b4a';b.fillRect(E2.x,E2.top,1,1)}}
   for(const o of C.beacons){if(!o.far)continue;if(Math.sin(C.t/700+o.p)>.3){b.fillStyle='#ff3b4a';b.fillRect(o.x,o.y,1,1)}}
   for(const a of C.air){b.fillStyle=a.v>0?'#fff2d6':'#ff5038';b.fillRect(Math.round(a.x),a.y,1,1)}
   drawBlimp();
@@ -858,21 +1053,19 @@ function drawBg(t,dt){
     b.fillStyle='#05090a';b.fillRect(bx,by,bw,sg.w);b.fillStyle=col;b.fillRect(bx,by,bw,1);b.fillRect(bx,by,1,sg.w);b.fillRect(bx+bw-1,by+2,1,sg.w-2);b.fillRect(bx+3,by+sg.w-1,bw-6,1)}
   else if(F&&F.st!=='ok'){const sg=F.s,hx=sg.x<w/2?sg.x+sg.w:sg.x,dirA=sg.x<w/2?-1:1;
     b.save();b.translate(hx,sg.y+F.y);b.rotate(F.a*dirA);drawSign(sg,-hx+(F.st==='shake'?Math.round((Math.random()-.5)*2):0),-sg.y,F.st==='shake'?Math.random()<.5:1);b.restore()}
-  for(const p of C.people)if(!p.near)drawPerson(p);
   /* мокрая дорога: отражение города с рябью, разметка, машины */
   if(b!==B0){b=B0;b.drawImage(C.U,0,0)}
   b.fillStyle='#060d0f';b.fillRect(0,hor+6,w,h-hor-6);
-  b.globalAlpha=.3;
+  b.globalAlpha=.22;
   const RH=h-hor-6;
   if(Q<1){b.save();b.translate(0,2*hor+11);b.scale(1,-1);b.drawImage(C.U,0,hor+5-RH,w,RH,0,hor+5-RH,w,RH);b.restore()}
   else{const bs=Q===2?2:4;for(let k=0;k<RH;k+=bs){const sy=hor+6-bs-k;if(sy<0)break;const dx=Math.round(Math.sin(k*.9+C.t*.004)*Math.min(3,k*.08));b.drawImage(C.U,0,sy,w,bs,dx,hor+6+k,w,bs)}}
   b.globalAlpha=1;
   b.fillStyle='rgba(3,8,10,.35)';for(let y=hor+7;y<h;y+=2)b.fillRect(0,y,w,1);
-  b.fillStyle='#3a4a40';for(let x=(Math.floor(C.t/1e9))%12;x<w;x+=12)b.fillRect(x,C.laneA+3,6,1);
-  for(const c of C.cars)if(c.d<0)drawCar(c);
-  for(const c of C.cars)if(c.d>0)drawCar(c);
-  b.fillStyle='#0c1618';b.fillRect(0,C.near0,w,5);b.fillStyle='#22383a';b.fillRect(0,C.near0,w,1);
-  for(const p of C.people)if(p.near)drawPerson(p);
+  b.drawImage(C.roadL,0,hor);
+  /* свет фонарей на проезжей части */
+  b.globalAlpha=C.lampP;b.drawImage(C.lampL,0,hor+6,w,h-hor-6,0,hor+6,w,h-hor-6);b.globalAlpha=1;
+  for(let lane=0;lane<4;lane++)for(const c of C.cars)if(c.lane===lane)drawCar(c);
   /* полиция в воздухе */
   for(const p of C.spinners){const x=Math.round(p.x),y=Math.round(p.y+Math.sin(p.ph*2)*2),ang=Math.sin(p.a)*.5,bx=x+3;
     if(Q>0){const L=Math.max(4,hor+6-y-3),ai=Math.round(ang*16),sp=beam(L,ai),sw=sp.c.width;b.globalCompositeOperation='lighter';b.drawImage(sp.c,0,0,sw,L,bx-sp.ox,y+3,sw,L);b.globalCompositeOperation='source-over'}
