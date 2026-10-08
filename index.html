@@ -54,6 +54,22 @@ body.mode-classic .ghost-only{display:none!important}
 .pad [data-a="down"]::after{content:"";position:absolute;inset:0;background:rgba(111,224,200,.28);transform:scaleY(0);transform-origin:top}
 .pad [data-a="down"].held::after{transform:scaleY(1);transition:transform .3s linear}
 .pad button:disabled{opacity:.3}
+.sndbox{display:grid;grid-template-columns:auto auto 34px;align-items:center;gap:6px 10px;padding:9px 10px;background:#050b0c;border:2px solid var(--line2)}
+#menu .sndbox{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:14px;z-index:5}
+.vol{display:contents}
+body.nomusic .vol[data-k="m"]{display:none}
+.vl{font-size:11px;line-height:0;color:var(--muted);white-space:nowrap}
+.seg{display:flex;gap:2px;padding:4px 0;cursor:pointer;touch-action:none;outline:none}
+.seg i{width:8px;height:12px;background:#11201f}
+.seg i.on{background:var(--teal)}
+.vol.muted .seg i.on{background:#24403c}
+.seg:focus-visible{outline:1px solid var(--teal);outline-offset:2px}
+.vmute{grid-column:3;grid-row:1/3;align-self:stretch;display:flex;align-items:center;justify-content:center;padding:0;background:transparent;border:2px solid var(--line2);color:var(--teal);cursor:pointer}
+.vmute:hover,.vmute:focus-visible{border-color:var(--teal);outline:none}
+.vmute[aria-pressed="true"]{color:var(--muted)}
+.vmute svg.ic{width:18px;height:18px;shape-rendering:crispEdges;fill:currentColor}
+.ovin .sndbox{margin:12px 0 0;padding:7px 8px;gap:6px 8px;grid-template-columns:auto auto 30px;background:transparent}
+.ovin .seg i{width:7px}
 .pad svg,.ovb svg.ic{width:20px;height:20px;shape-rendering:crispEdges;fill:currentColor}
 @media (hover:none){
  /* телефон: поле во всю доступную ширину, счёт — колонкой справа, внизу крестовина кнопок */
@@ -72,6 +88,7 @@ body.mode-classic .ghost-only{display:none!important}
  .pad [data-a="down"]{grid-column:3;grid-row:2}
  .pad [data-a="right"]{grid-column:4;grid-row:1/3}
  .pad [data-a="pause"]{grid-column:5;grid-row:1}
+ .pad [data-a="snd"]{grid-column:5;grid-row:2}
  .pad button{width:auto;height:auto}
  .pad .mv svg{width:24px;height:24px}
 }
@@ -166,6 +183,7 @@ body.mode-classic .ghost-only{display:none!important}
 <canvas id="bg"></canvas>
 <div id="ach"><small>Достижение</small><b data-px="Квадро"></b><span>4 линии за один ход</span></div>
 <div id="menu" class="on">
+  <div class="sndbox" id="mVol"><div class="vol" data-k="m"><span class="vl" data-px="Музыка"></span><div class="seg" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="10" aria-label="Громкость музыки"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div><div class="vol" data-k="f"><span class="vl" data-px="Эффекты"></span><div class="seg" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="10" aria-label="Громкость эффектов"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div><button class="vmute" aria-label="Без звука" aria-pressed="false"><svg class="ic" viewBox="0 0 10 10"><path d="M1 3h2v4h-2zM3 2h1v6h-1zM4 1h1v8h-1zM6 3h1v4h-1zM8 2h1v6h-1z"/></svg></button></div>
   <div class="mwrap">
     <h1 class="logo" aria-label="GHOST//GRID"><span data-px="GHOST"></span><span class="sl" data-px="//"></span><span data-px="GRID"></span></h1>
     <section class="mpage on" id="pMain">
@@ -186,14 +204,14 @@ body.mode-classic .ghost-only{display:none!important}
       <div class="glist" id="glist"></div>
       <div class="lrow"><button class="back" id="mBack2" data-px="Назад"></button><button class="back dim" id="logClear">очистить</button></div>
     </section>
-    <div class="mfoot"><kbd>↑</kbd><kbd>↓</kbd> выбор &nbsp; <kbd>Enter</kbd> выбрать &nbsp; <kbd>Esc</kbd> назад</div>
+    <div class="mfoot"><kbd>↑</kbd><kbd>↓</kbd> выбор &nbsp; <kbd>Enter</kbd> выбрать &nbsp; <kbd>Esc</kbd> назад<span class="sndk"> &nbsp; <kbd>S</kbd> без звука</span></div>
   </div>
 </div>
 <div class="wrap">
   <div class="frame"><canvas id="field" width="300" height="600"></canvas>
     <div class="ov" id="ovPause"><div class="ovin"><h2 data-px="Пауза"></h2>
-      <button class="ovb pri" id="pResume"><span data-px="Продолжить"></span></button><button class="ovb" id="pRestart"><span data-px="Заново"></span></button><button class="ovb" id="pMenu"><span data-px="В меню"></span></button>
-      <p class="kh"><kbd>P</kbd> &nbsp;<kbd>R</kbd> &nbsp;<kbd>M</kbd></p></div></div>
+      <button class="ovb pri" id="pResume"><span data-px="Продолжить"></span></button><button class="ovb" id="pRestart"><span data-px="Заново"></span></button><button class="ovb" id="pMenu"><span data-px="В меню"></span></button><div class="sndbox" id="pVol"><div class="vol" data-k="m"><span class="vl" data-px="Музыка"></span><div class="seg" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="10" aria-label="Громкость музыки"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div><div class="vol" data-k="f"><span class="vl" data-px="Эффекты"></span><div class="seg" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="10" aria-label="Громкость эффектов"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div><button class="vmute" aria-label="Без звука" aria-pressed="false"><svg class="ic" viewBox="0 0 10 10"><path d="M1 3h2v4h-2zM3 2h1v6h-1zM4 1h1v8h-1zM6 3h1v4h-1zM8 2h1v6h-1z"/></svg></button></div>
+      <p class="kh"><kbd>P</kbd> &nbsp;<kbd>R</kbd> &nbsp;<kbd>M</kbd><span class="sndk"> &nbsp;<kbd>S</kbd></span></p></div></div>
     <div class="ov" id="ovOver"><div class="ovin"><h2 data-px="Игра окончена"></h2><div class="rec" id="oRec"><span data-px="Новый рекорд"></span></div>
       <dl class="ost"><div><dt>счёт</dt><dd id="oSc">0</dd></div><div><dt>линии</dt><dd id="oLn">0</dd></div><div><dt>уровень</dt><dd id="oLv">1</dd></div><div><dt>время</dt><dd id="oTm">0:00</dd></div></dl>
       <button class="ovb amb" id="oUndo"><svg class="ic" viewBox="0 0 10 10"><path d="M2 0h1v1h-1zM1 1h1v1h-1zM2 1h1v1h-1zM0 2h1v1h-1zM1 2h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM1 3h1v1h-1zM2 3h1v1h-1zM8 3h1v1h-1zM2 4h1v1h-1zM9 4h1v1h-1zM9 5h1v1h-1zM9 6h1v1h-1zM8 7h1v1h-1zM1 8h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1z"/></svg><span data-px="Отменить ход"></span></button><button class="ovb pri" id="oAgain"><span data-px="Ещё раз"></span></button><button class="ovb" id="oMenu"><span data-px="В меню"></span></button>
@@ -208,11 +226,12 @@ body.mode-classic .ghost-only{display:none!important}
     <div class="box bestbox"><span>Рекорд</span><b id="bs">0</b></div>
     <div class="box nrg ghost-only" id="nrgbox"><span>Энергия <i id="undoN">2 отмены</i></span><div class="cells" id="nrgcells"></div></div>
     <div class="box ghost-only"><span>Вирус</span><b id="vir">0</b></div>
-    <div class="help"><span><kbd>←</kbd><kbd>→</kbd></span><span>двигать</span><span><kbd>↑</kbd></span><span>повернуть</span><span><kbd>↓</kbd></span><span>вниз</span><span><kbd>Пробел</kbd></span><span>поставить</span><span class="ghost-only"><kbd>Z</kbd></span><span class="ghost-only">отменить ход</span><span><kbd>P</kbd></span><span>пауза</span></div>
+    <div class="help"><span><kbd>←</kbd><kbd>→</kbd></span><span>двигать</span><span><kbd>↑</kbd></span><span>повернуть</span><span><kbd>↓</kbd></span><span>вниз</span><span><kbd>Пробел</kbd></span><span>поставить</span><span class="ghost-only"><kbd>Z</kbd></span><span class="ghost-only">отменить ход</span><span><kbd>P</kbd></span><span>пауза</span><span class="sndk"><kbd>S</kbd></span><span class="sndk">без звука</span></div>
   </div>
   <div class="pad">
     <button class="ghost-only" id="undo" data-a="undo" aria-label="Отменить ход" disabled><svg class="ic" viewBox="0 0 10 10"><path d="M2 0h1v1h-1zM1 1h1v1h-1zM2 1h1v1h-1zM0 2h1v1h-1zM1 2h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM5 2h1v1h-1zM6 2h1v1h-1zM7 2h1v1h-1zM1 3h1v1h-1zM2 3h1v1h-1zM8 3h1v1h-1zM2 4h1v1h-1zM9 4h1v1h-1zM9 5h1v1h-1zM9 6h1v1h-1zM8 7h1v1h-1zM1 8h1v1h-1zM2 8h1v1h-1zM3 8h1v1h-1zM4 8h1v1h-1zM5 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1z"/></svg></button>
     <button class="mv" data-a="left" aria-label="Влево"><svg class="ic" viewBox="0 0 10 10"><path d="M4 1h1v1h-1zM3 2h2v1h-2zM2 3h3v1h-3zM1 4h8v2h-8zM2 6h3v1h-3zM3 7h2v1h-2zM4 8h1v1h-1z"/></svg></button><button class="mv" data-a="rot" aria-label="Повернуть"><svg class="ic" viewBox="0 0 10 10"><path d="M3 1h4v1h-4zM2 2h1v1h-1zM7 2h1v1h-1zM1 3h1v4h-1zM6 3h3v1h-3zM7 4h1v1h-1zM2 7h1v1h-1zM7 7h1v1h-1zM3 8h4v1h-4z"/></svg></button><button class="mv" data-a="down" aria-label="Вниз"><svg class="ic" viewBox="0 0 10 10"><path d="M4 1h2v8h-2zM1 5h8v1h-8zM2 6h6v1h-6zM3 7h4v1h-4z"/></svg></button><button class="mv" data-a="right" aria-label="Вправо"><svg class="ic" viewBox="0 0 10 10"><path d="M5 1h1v1h-1zM5 2h2v1h-2zM5 3h3v1h-3zM1 4h8v2h-8zM5 6h3v1h-3zM5 7h2v1h-2zM5 8h1v1h-1z"/></svg></button>
+    <button data-a="snd" aria-label="Без звука"><svg class="ic" viewBox="0 0 10 10"><path d="M1 3h2v4h-2zM3 2h1v6h-1zM4 1h1v8h-1zM6 3h1v4h-1zM8 2h1v6h-1z"/></svg></button>
     <button data-a="pause" aria-label="Пауза"><svg viewBox="0 0 10 10"><path d="M2 1h2v8h-2zM6 1h2v8h-2z"/></svg></button>
   </div>
 </div>
@@ -1119,9 +1138,9 @@ function rot(m){return m[0].map((_,i)=>m.map(r=>r[i]).reverse())}
 function tryRotate(){
   if(lockHold||!cur)return;
   const m=rot(cur.m);
-  for(const k of [0,-1,1,-2,2])if(!hit(m,cur.x+k,cur.y)){cur.m=m;cur.x+=k;return}
+  for(const k of [0,-1,1,-2,2])if(!hit(m,cur.x+k,cur.y)){cur.m=m;cur.x+=k;sfx('rotate');return}
 }
-function move(dx){if(lockHold||!cur)return;if(!hit(cur.m,cur.x+dx,cur.y))cur.x+=dx}
+function move(dx){if(lockHold||!cur)return;if(!hit(cur.m,cur.x+dx,cur.y)){cur.x+=dx;sfx('move')}}
 function drop(){
   if(lockHold||!cur)return false;
   if(!hit(cur.m,cur.x,cur.y+1)){cur.y++;return true}
@@ -1132,6 +1151,7 @@ function hardDrop(){
   const y0=cur.y,px=cur.x,m=cur.m,t=cur.t;
   while(!hit(cur.m,cur.x,cur.y+1))cur.y++;
   hardTrail(m,px,y0,cur.y,t);
+  sfx('hard');SFX.hardAt=performance.now();
   drop();
 }
 const gravIv=()=>Math.max(80,800-(level-1)*70);
@@ -1161,7 +1181,7 @@ function seedVirus(){
   board.forEach((row,r)=>row.forEach((v,c)=>{if(v&&v!=='X'&&(r===0||!board[r-1][c]))cand.push([r,c])}));
   if(!cand.length)return;
   const [r,c]=cand[Math.floor(Math.random()*cand.length)];
-  board[r][c]='X';sparkle([[r,c]],true);
+  board[r][c]='X';sparkle([[r,c]],true);sfx('virus');
 }
 function spreadVirus(){
   const vs=[];board.forEach((row,r)=>row.forEach((v,c)=>{if(v==='X')vs.push([r,c])}));
@@ -1170,7 +1190,7 @@ function spreadVirus(){
   const nb=[[r+1,c],[r,c-1],[r,c+1],[r-1,c]].filter(([a,d])=>a>=0&&a<H&&d>=0&&d<W&&board[a][d]&&board[a][d]!=='X');
   if(!nb.length)return;
   const [a,d]=nb[Math.floor(Math.random()*nb.length)];
-  board[a][d]='X';sparkle([[a,d]],true);
+  board[a][d]='X';sparkle([[a,d]],true);sfx('virus');
 }
 function virusTick(){
   if(!ghost()||!CFG.virusEvery)return;
@@ -1190,7 +1210,8 @@ function lock(){
   const full=[];board.forEach((row,i)=>{if(rowClear(row))full.push(i)});
   const n=full.length,gone=full.map(i=>board[i].slice());
   if(n){
-    score+=[0,100,300,500,800][n]*level;lines+=n;level=Math.floor(lines/10)+1;
+    const lv0=level;score+=[0,100,300,500,800][n]*level;lines+=n;level=Math.floor(lines/10)+1;
+    sfx('clear'+n);if(level>lv0)setTimeout(()=>sfx('level'),n===4?900:500);
     if(n===4)quads++;
     if(ghost())energy=Math.min(CFG.energyMax,energy+CFG.energyPerLine[n]);
     cleanse(n,full);
@@ -1198,6 +1219,7 @@ function lock(){
     spawnFx(n,full,gone);
     cityEvent('clear',n);
   }
+  if(!n&&!(SFX.hardAt&&performance.now()-SFX.hardAt<60))sfx('lock');
   if(n===4&&!achieved){achieved=true;showAch()}
   ui();
   if(state==='run'&&!lockHold)nextPiece();
@@ -1215,7 +1237,7 @@ function collapse(){
 function warnEnergy(){const el=$('nrgbox');el.classList.add('warn');setTimeout(()=>el.classList.remove('warn'),450)}
 function undo(){
   if(!ghost()||!history.length||(state!=='run'&&state!=='over'))return;
-  if(energy<CFG.undoCost){warnEnergy();return}
+  if(energy<CFG.undoCost){warnEnergy();sfx('deny');return}
   const s=history.pop();
   energy-=CFG.undoCost;undos++;
   board=s.board;bag=s.bag;nextT=s.nextT;score=s.score;lines=s.lines;level=s.level;pieces=s.pieces;quads=s.quads;
@@ -1229,10 +1251,10 @@ function undo(){
   }
   if(!cur)spawn(s.t);
   acc=0;
-  rewind={t0:gt};
+  rewind={t0:gt};sfx('undo');
   ui();
 }
-function showAch(){const a=$('ach');a.classList.add('show');setTimeout(()=>a.classList.remove('show'),4200)}
+function showAch(){sfx('ach');const a=$('ach');a.classList.add('show');setTimeout(()=>a.classList.remove('show'),4200)}
 function ui(){
   setPx($('sc'),score);setPx($('ln'),lines);setPx($('lv'),level);setPx($('bs'),Math.max(best,score));
   const nv=countVirus();setPx($('vir'),nv);$('vir').style.color=nv?'#ff3b5c':'';
@@ -1249,7 +1271,7 @@ function over(){
   $('oRec').style.display=rec?'':'none';
   $('oUndo').style.display=ghost()&&history.length?'':'none';
   $('oUndo').disabled=energy<CFG.undoCost;
-  showOverlay('ovOver');
+  showOverlay('ovOver');sfx('over');
 }
 function start(m){
   if(m)mode=m;
@@ -1263,15 +1285,15 @@ function start(m){
   $('modeTag').textContent=mode==='ghost'?'Режим Призрака':'Классика';
   showOverlay(null);showMenu(false);blurActive();
   cityEvent('start');
-  ui();state='run';spawn();
+  ui();state='run';spawn();sfx('start');
 }
 function pause(on){
-  if(on&&state==='run'){state='pause';spaceHeld=false;fastKeys.clear();showOverlay('ovPause')}
-  else if(!on&&state==='pause'){state='run';showOverlay(null);blurActive()}
+  if(on&&state==='run'){state='pause';spaceHeld=false;fastKeys.clear();showOverlay('ovPause');sfx('pauseOn')}
+  else if(!on&&state==='pause'){state='run';showOverlay(null);blurActive();sfx('pauseOff')}
 }
 function toMenu(){
   if(state==='run'||state==='pause')saveGame('quit');
-  state='menu';showOverlay(null);showMenu(true);cityEvent('menu');
+  state='menu';showOverlay(null);showMenu(true);cityEvent('menu');sfx('back');
 }
 const blurActive=()=>{const a=document.activeElement;if(a&&a.blur&&a!==document.body)a.blur()};
 
@@ -1645,6 +1667,7 @@ function stepFall(dt){
 const fallLanded=()=>!fallAnim||Object.values(fallAnim.rows).every(o=>o.landed);
 function landDust(r,v){
   if(v<3)return;
+  sfx('land',v);
   for(let c=0;c<W;c++)if(board[r][c]&&(r===H-1||board[r+1][c])&&Math.random()<.7)
     addP({k:'dust',x:c*S+rnd(4,S-4),y:(r+1)*S-1,vx:rnd(-40,40),vy:rnd(-30,-6),drag:2.5,life:rnd(300,520),s:2,s2:9,c:'#8fb8b2'});
 }
@@ -1749,6 +1772,7 @@ function frame(t){
     if(state!=='menu'&&fpsEma>21){slowT+=dt;if(slowT>1500&&Q>0){Q--;slowT=0;BG_IV=Q===1?50:70;fpsEma=16.7}}else slowT=Math.max(0,slowT-dt)}
   bgAcc+=dt;if(bgAcc>=BG_IV){drawBg(t,Math.min(bgAcc,100));bgAcc=0}
   if(state!=='menu')render();
+  musicTick(dt);
   requestAnimationFrame(frame);
 }
 
@@ -1777,14 +1801,14 @@ function showMenu(on){
 }
 function menuKey(e){
   const k=e.code;
-  if(k==='ArrowDown'||k==='ArrowRight'){e.preventDefault();setSel(sel+1)}
-  else if(k==='ArrowUp'||k==='ArrowLeft'){e.preventDefault();setSel(sel-1)}
-  else if(k==='Enter'||k==='Space'){e.preventDefault();if(!e.repeat)MENU[page][sel][1]()}
-  else if((k==='Escape'||k==='Backspace')&&page!=='main'){e.preventDefault();showPage('main')}
+  if(k==='ArrowDown'||k==='ArrowRight'){e.preventDefault();setSel(sel+1);sfx('tick')}
+  else if(k==='ArrowUp'||k==='ArrowLeft'){e.preventDefault();setSel(sel-1);sfx('tick')}
+  else if(k==='Enter'||k==='Space'){e.preventDefault();if(!e.repeat){sfx('ok');MENU[page][sel][1]()}}
+  else if((k==='Escape'||k==='Backspace')&&page!=='main'){e.preventDefault();sfx('back');showPage('main')}
 }
 Object.keys(MENU).forEach(p=>MENU[p].forEach(([id,fn],j)=>{
   const el=$(id);
-  el.addEventListener('click',e=>{if(page!==p)return;fn();blurActive()});
+  el.addEventListener('click',e=>{if(page!==p)return;sfx(id.startsWith('mBack')?'back':'ok');fn();blurActive()});
   el.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'&&page===p)setSel(j)});
 }));
 let clearArm=-1e9;
@@ -1828,6 +1852,7 @@ function drawIcons(){
 /* --- клавиатура --- */
 addEventListener('keydown',e=>{
   const k=e.code;
+  if(k==='KeyS'&&!e.repeat){e.preventDefault();toggleMute();return}
   if(state==='menu'){menuKey(e);return}
   if(state==='over'){
     if((k==='Enter'||k==='Space')&&!e.repeat){e.preventDefault();start();return}
@@ -1855,7 +1880,7 @@ addEventListener('keydown',e=>{
   }
   if(k==='ArrowDown'){
     e.preventDefault();
-    if(!e.repeat){fastKeys.add(k);fastStart=performance.now();drop();acc=0}
+    if(!e.repeat){fastKeys.add(k);fastStart=performance.now();if(drop())sfx('step');acc=0}
     return;
   }
   if(k==='ArrowLeft'){e.preventDefault();move(-1)}
@@ -1886,7 +1911,7 @@ padHold('rot',()=>tryRotate());
 (function(){const el=P('down');if(!el)return;let t=null,pid=-1;
   const stop=()=>{if(t){clearTimeout(t);t=null}if(el.classList)el.classList.remove('held')};
   el.addEventListener('pointerdown',e=>{e.preventDefault();if(state!=='run')return;if(el.setPointerCapture&&e.pointerId!=null)try{el.setPointerCapture(e.pointerId)}catch(x){}
-    stop();if(el.classList)el.classList.add('held');pid=spawnN;drop();acc=0;
+    stop();if(el.classList)el.classList.add('held');pid=spawnN;if(drop())sfx('step');acc=0;
     t=setTimeout(()=>{t=null;if(state==='run'&&pid===spawnN&&!lockHold&&cur)hardDrop();if(el.classList)el.classList.remove('held')},300)});
   ['pointerup','pointercancel','lostpointercapture'].forEach(n=>el.addEventListener(n,stop));
 })();
@@ -1926,6 +1951,7 @@ function swMove(e){
     while(e.clientY-sw.ay>=sy){
       sw.ay+=sy;
       if(!drop()){sw.ay=e.clientY;break}
+      sfx('step');
     }
   }
 }
@@ -1944,9 +1970,183 @@ document.addEventListener('pointermove',swMove);
 document.addEventListener('pointerup',swUp);
 document.addEventListener('pointercancel',()=>{sw=null});
 
+/* =====================================================================
+   ЗВУК
+   Музыка — вшитый трек (MUSIC_B64 в последнем теге script), обычный аудиоэлемент, запасной путь — Web Audio.
+   Эффекты синтезируются на лету в духе экранов и терминалов: короткие, мягкие, без резких пиков.
+   Громкость — два ползунка по 10 делений (музыка и эффекты) + общий «без звука».
+   Шкала нелинейная, как у слуха; максимум и так ниже полной громкости, а на выходе эффектов стоит лимитер.
+   Браузер разрешает звук только после первого касания или нажатия.
+   ===================================================================== */
+const VOL_KEY='ghostgrid-vol';
+const VOL={m:5,f:5,mute:false};
+try{const v=JSON.parse(localStorage.getItem(VOL_KEY)||'null');if(v){if(v.m>=0&&v.m<=10)VOL.m=Math.round(v.m);if(v.f>=0&&v.f<=10)VOL.f=Math.round(v.f);VOL.mute=!!v.mute}
+  else if(localStorage.getItem('ghostgrid-music')==='off')VOL.m=0}catch(e){}
+const musGain=()=>VOL.mute?0:Math.pow(VOL.m/10,1.7)*.7;      /* 5 из 10 ≈ 0,22 громкости элемента */
+const sfxGain=()=>VOL.mute?0:Math.pow(VOL.f/10,1.7)*.55;     /* 5 из 10 ≈ 0,17 на шине эффектов */
+function saveVol(){try{localStorage.setItem(VOL_KEY,JSON.stringify(VOL))}catch(e){}}
+
+/* --- музыка --- */
+const SND={el:null,vol:0,ok:true,user:false,err:'',alt:0};
+const ICON_ON='M1 3h2v4h-2zM3 2h1v6h-1zM4 1h1v8h-1zM6 3h1v4h-1zM8 2h1v6h-1z',ICON_OFF='M1 3h2v4h-2zM3 2h1v6h-1zM4 1h1v8h-1zM6 3h1v1h-1zM7 4h1v1h-1zM8 5h1v1h-1zM9 6h1v1h-1zM9 3h1v1h-1zM8 4h1v1h-1zM7 5h1v1h-1zM6 6h1v1h-1z';
+/* трек лежит в последнем теге script, он выполняется позже — проверяем при обращении */
+const hasMusic=()=>{try{return typeof MUSIC_B64!=='undefined'&&MUSIC_B64.length>0}catch(e){return false}};
+const musicOn=()=>hasMusic()&&!VOL.mute&&VOL.m>0;
+function musicEl(){
+  if(SND.el||typeof Audio==='undefined')return SND.el;
+  const a=new Audio();a.loop=true;a.preload='auto';a.volume=0;if(a.setAttribute)a.setAttribute('playsinline','');
+  a.addEventListener('error',musicLoadErr);
+  a.addEventListener('ended',()=>{try{a.currentTime=0}catch(e){}a.play().catch(()=>{})});
+  try{a.src=musicBlob()}catch(e){SND.el=a;musicLoadErr();return a}SND.el=a;return a;
+}
+function musicBlob(){
+  if(SND.blobUrl)return SND.blobUrl;
+  const bin=atob(MUSIC_B64),n=bin.length,u=new Uint8Array(n);for(let i=0;i<n;i++)u[i]=bin.charCodeAt(i);
+  SND.bytes=u;SND.blobUrl=URL.createObjectURL(new Blob([u],{type:'audio/mpeg'}));return SND.blobUrl;
+}
+function musicLoadErr(){if(SND.wa||SND.alt){SND.ok=false;SND.err='load';return}SND.alt=1;webAudioStart()}
+function webAudioStart(){
+  if(!audioCtx()||!SND.bytes){SND.ok=false;SND.err='load';return}
+  try{const ctx=SFX.ctx,g=SND.gain=ctx.createGain();g.gain.value=0;g.connect(ctx.destination);
+    const pr=ctx.decodeAudioData(SND.bytes.buffer.slice(0),ab=>{SND.wa=1;SND.buf=ab;SND.err='';waPlay()},()=>{SND.ok=false;SND.err='load'});if(pr&&pr.catch)pr.catch(()=>{})}
+  catch(e){SND.ok=false;SND.err='load'}
+}
+function waPlay(){if(!SND.wa||!musicOn()||SND.src||document.hidden)return;const s=SFX.ctx.createBufferSource();s.buffer=SND.buf;s.loop=true;s.connect(SND.gain);s.start(0);SND.src=s}
+function waStop(){if(SND.src){try{SND.src.stop()}catch(e){}SND.src=null}}
+function musicPlay(){const a=musicEl();if(!a||!musicOn()||!SND.ok||document.hidden)return;if(SND.wa){waPlay();return}if(SND.alt)return;
+  if(a.paused){const p=a.play();if(p&&p.catch)p.catch(()=>{})}}
+function musicStop(){if(SND.el)SND.el.pause();waStop()}      /* на iPhone громкость элемента не меняется, поэтому «0» = пауза */
+function musicTick(dt){
+  const a=SND.el;if(!a)return;
+  if(!musicOn()){if(!a.paused||SND.src)musicStop();return}
+  if(SND.wa?!SND.src:a.paused)return;
+  const tg=musGain()*(state==='pause'?.35:state==='over'?.5:1);
+  SND.vol+=(tg-SND.vol)*(1-Math.exp(-dt/(tg>SND.vol?700:250)));
+  const v=Math.max(0,Math.min(1,SND.vol));
+  if(SND.wa){try{SND.gain.gain.value=v}catch(e){}}else try{a.volume=v}catch(e){}
+}
+
+/* --- эффекты --- */
+const SFX={ctx:null,bus:null,noise:null,last:{},k:1};
+function audioCtx(){
+  if(SFX.ctx)return SFX.ctx;
+  const AC=typeof AudioContext!=='undefined'?AudioContext:(typeof webkitAudioContext!=='undefined'?webkitAudioContext:null);if(!AC)return null;
+  let ctx;try{ctx=new AC()}catch(e){return null}
+  const bus=ctx.createGain();bus.gain.value=sfxGain();
+  const comp=ctx.createDynamicsCompressor();comp.threshold.value=-22;comp.knee.value=10;comp.ratio.value=8;comp.attack.value=.002;comp.release.value=.18;
+  bus.connect(comp);comp.connect(ctx.destination);
+  const n=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate),d=n.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  SFX.ctx=ctx;SFX.bus=bus;SFX.noise=n;return ctx;
+}
+function sfxApply(){if(SFX.bus)SFX.bus.gain.setTargetAtTime(sfxGain(),SFX.ctx.currentTime,.03)}
+/* тон: тип волны, частота от f0 к f1, длительность, громкость; фильтр и задержка по желанию */
+function tone(type,f0,f1,dur,g,o){
+  const c=SFX.ctx,t=c.currentTime+((o&&o.at)||0),os=c.createOscillator(),ga=c.createGain();
+  os.type=type;os.frequency.setValueAtTime(f0,t);if(f1!==f0)os.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);
+  if(o&&o.det)os.detune.value=o.det;
+  const at=(o&&o.att)||.004;ga.gain.setValueAtTime(0,t);ga.gain.linearRampToValueAtTime(g*SFX.k,t+at);ga.gain.exponentialRampToValueAtTime(.0005,t+dur);
+  let last=ga;os.connect(ga);
+  if(o&&o.lp){const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=o.lp;f.Q.value=o.q||.7;ga.connect(f);last=f}
+  last.connect(SFX.bus);os.start(t);os.stop(t+dur+.05);
+}
+/* шум через фильтр, частота фильтра может плыть */
+function hiss(dur,g,type,f0,f1,q,o){
+  const c=SFX.ctx,t=c.currentTime+((o&&o.at)||0),s=c.createBufferSource(),f=c.createBiquadFilter(),ga=c.createGain();
+  s.buffer=SFX.noise;s.loop=true;f.type=type;f.Q.value=q||1;f.frequency.setValueAtTime(f0,t);if(f1!==f0)f.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur);
+  const at=(o&&o.att)||.003;ga.gain.setValueAtTime(0,t);ga.gain.linearRampToValueAtTime(g*SFX.k,t+at);ga.gain.exponentialRampToValueAtTime(.0005,t+dur);
+  s.connect(f);f.connect(ga);ga.connect(SFX.bus);s.start(t,Math.random()*.5);s.stop(t+dur+.05);
+}
+const SOUNDS={
+  move:()=>tone('triangle',1250,1180,.035,.16),
+  rotate:()=>{tone('square',540,820,.055,.07,{lp:2600});tone('sine',1640,1640,.03,.06,{at:.025})},
+  step:()=>tone('triangle',760,700,.03,.1),
+  lock:()=>{tone('sine',150,72,.11,.5);hiss(.04,.12,'bandpass',2600,2000,1.5)},
+  hard:()=>{hiss(.14,.22,'bandpass',4200,700,1.1);tone('sine',120,46,.2,.7,{at:.06});hiss(.05,.16,'lowpass',900,400,.7,{at:.06})},
+  /* 1 линия — лазерный срез */
+  clear1:()=>{tone('sawtooth',2600,240,.34,.2,{lp:3200});tone('sine',5200,3400,.16,.05);hiss(.25,.06,'highpass',6000,3000,.7,{at:.05})},
+  /* 2 — системный сбой: рваные цифровые обрывки */
+  clear2:()=>{for(let i=0;i<9;i++){const f=180+Math.random()*1100;tone('square',f,f*(Math.random()<.5?.7:1.3),.03,.1,{at:i*.045,lp:2800});if(i%3===0)hiss(.03,.1,'bandpass',3000,3000,2,{at:i*.045+.02})}},
+  /* 3 — взлом: бегущая вверх строка данных и подтверждение */
+  clear3:()=>{const N=[440,523,587,659,784,880,1047,1175,1319,1568];N.forEach((f,i)=>tone('square',f,f,.045,.08,{at:i*.042,lp:3400}));
+    tone('triangle',1760,1760,.08,.1,{at:.46});tone('triangle',2349,2349,.12,.1,{at:.53})},
+  /* 4 — взрыв */
+  clear4:()=>{tone('sine',78,26,1.5,.9);hiss(1.3,.5,'lowpass',1100,120,.7);hiss(.06,.3,'highpass',3000,2000,.7);tone('sine',42,30,1.2,.4,{at:.05})},
+  land:v=>tone('sine',95,55,.09,Math.min(.35,.08+v*.02)),
+  undo:()=>{tone('sawtooth',200,900,.32,.12,{lp:1900,att:.26});hiss(.3,.06,'bandpass',800,3200,2,{att:.25})},
+  deny:()=>{tone('square',150,140,.07,.12,{lp:900});tone('square',150,140,.07,.12,{lp:900,at:.11})},
+  virus:()=>{tone('sawtooth',340,240,.34,.08,{lp:1300});tone('sawtooth',347,246,.34,.08,{lp:1300});hiss(.12,.05,'bandpass',4000,4000,3,{at:.1})},
+  level:()=>{[660,880,1320].forEach((f,i)=>tone('triangle',f,f,.14,.12,{at:i*.08}))},
+  ach:()=>{tone('sine',1568,1568,.9,.09,{at:.4});tone('sine',2093,2093,.9,.07,{at:.48});tone('sine',3136,3136,.6,.03,{at:.48})},
+  over:()=>{tone('sawtooth',420,48,1.7,.2,{lp:1300});tone('sine',55,40,1.6,.35,{at:.5,att:.3})},
+  start:()=>{tone('square',220,440,.22,.07,{lp:2200});tone('square',330,660,.22,.06,{lp:2200,at:.06});tone('triangle',880,880,.1,.08,{at:.24})},
+  pauseOn:()=>tone('sine',720,460,.09,.14),
+  pauseOff:()=>tone('sine',460,720,.09,.14),
+  tick:()=>tone('triangle',1050,1050,.025,.08),
+  ok:()=>{tone('triangle',660,990,.07,.12)},
+  back:()=>tone('triangle',800,520,.06,.1)
+};
+const GAP={move:28,step:40,land:70,tick:30,rotate:30};
+/* выравнивание громкости: мелкие звуки управления тихие, удары и очистки заметнее, но не громче музыки */
+const LEVEL={move:.8,rotate:1.9,step:1,lock:.62,hard:.62,clear1:1.9,clear2:2.5,clear3:3.1,clear4:.6,land:1,undo:2.3,deny:1.8,virus:1.7,level:2.2,ach:2,over:1.3,start:2.8,pauseOn:1.5,pauseOff:1.5,tick:1.15,ok:1.5,back:1.5};
+function sfx(name,arg){
+  if(VOL.mute||VOL.f<=0||!SFX.ctx||SFX.ctx.state!=='running')return;
+  const n=performance.now(),g=GAP[name];if(g&&SFX.last[name]&&n-SFX.last[name]<g)return;SFX.last[name]=n;
+  SFX.k=LEVEL[name]||1;try{SOUNDS[name](arg)}catch(e){}SFX.k=1;
+}
+
+/* --- первый жест разрешает звук --- */
+function soundGesture(){
+  SND.user=true;
+  const c=audioCtx();if(c&&c.state==='suspended'&&!document.hidden){const p=c.resume();if(p&&p.catch)p.catch(()=>{})}
+  musicPlay();
+}
+['pointerdown','pointerup','touchend','click'].forEach(t=>document.addEventListener(t,soundGesture,{capture:true,passive:true}));
+document.addEventListener('keydown',e=>{if(e.code!=='KeyS')soundGesture()},true);
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){musicStop();if(SFX.ctx&&SFX.ctx.suspend)SFX.ctx.suspend()}
+  else if(SND.user){if(SFX.ctx&&SFX.ctx.resume)SFX.ctx.resume();musicPlay()}
+});
+
+/* --- громкость: ползунки и «без звука» --- */
+function setVol(k,v){
+  v=Math.max(0,Math.min(10,Math.round(v)));if(VOL[k]===v&&!VOL.mute)return;
+  VOL[k]=v;if(VOL.mute&&v>0)VOL.mute=false;saveVol();sfxApply();SND.vol=Math.min(SND.vol,musGain());
+  if(k==='m'){if(musicOn())musicPlay();else musicStop()}
+  if(k==='f'&&v>0){SFX.last.tick=0;sfx('tick')}
+  volUI();
+}
+function toggleMute(){
+  VOL.mute=!VOL.mute;saveVol();sfxApply();SND.user=true;
+  if(VOL.mute)musicStop();else{SND.vol=0;musicPlay()}
+  volUI();
+}
+function volUI(){
+  if(document.body&&document.body.classList){if(hasMusic())document.body.classList.remove('nomusic');else document.body.classList.add('nomusic')}
+  document.querySelectorAll('.vol').forEach(el=>{const k=el.dataset?el.dataset.k:null;if(!k)return;const v=VOL[k];
+    el.querySelectorAll('.seg i').forEach((c,i)=>{if(i<v)c.classList.add('on');else c.classList.remove('on')});
+    if(el.classList){if(VOL.mute)el.classList.add('muted');else el.classList.remove('muted')}
+    const s=el.querySelector('.seg');if(s&&s.setAttribute){s.setAttribute('aria-valuenow',String(v));s.setAttribute('aria-valuetext',VOL.mute?'без звука':v*10+'%')}});
+  const ic=VOL.mute?ICON_OFF:ICON_ON;
+  document.querySelectorAll('.pad [data-a="snd"] svg.ic path,.vmute svg.ic path').forEach(p=>p.setAttribute('d',ic));
+  document.querySelectorAll('.vmute').forEach(b=>{if(b.setAttribute)b.setAttribute('aria-pressed',VOL.mute?'true':'false')});
+}
+function volBind(el){
+  const k=el.dataset.k,seg=el.querySelector('.seg');if(!seg)return;
+  let drag=false;
+  const at=e=>{const r=seg.getBoundingClientRect(),x=(e.clientX-r.left)/Math.max(1,r.width);setVol(k,x<.04?0:Math.ceil(x*10))};
+  seg.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();drag=true;if(seg.setPointerCapture&&e.pointerId!=null)try{seg.setPointerCapture(e.pointerId)}catch(x){}at(e)});
+  seg.addEventListener('pointermove',e=>{if(drag)at(e)});
+  ['pointerup','pointercancel','lostpointercapture'].forEach(t=>seg.addEventListener(t,()=>{drag=false}));
+  seg.addEventListener('keydown',e=>{const d=e.code==='ArrowRight'||e.code==='ArrowUp'?1:e.code==='ArrowLeft'||e.code==='ArrowDown'?-1:0;
+    if(d){e.preventDefault();e.stopPropagation();setVol(k,VOL[k]+d)}});
+}
+document.querySelectorAll('.vol').forEach(volBind);
+document.querySelectorAll('.vmute').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();toggleMute();blurActive()}));
+P('snd').addEventListener('pointerdown',e=>{e.preventDefault();toggleMute()});
+
 board=Array.from({length:H},()=>Array(W).fill(0));
 document.querySelectorAll('[data-px]').forEach(el=>setPx(el,el.dataset.px));
-ui();showMenu(true);
+ui();showMenu(true);volUI();addEventListener('load',volUI);
 requestAnimationFrame(frame);
 </script>
 </body>
